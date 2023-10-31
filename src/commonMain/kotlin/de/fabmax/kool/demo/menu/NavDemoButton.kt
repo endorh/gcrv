@@ -5,7 +5,7 @@ import de.fabmax.kool.math.Vec3f
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 
-class NavDemoButton(val menu: DemoMenu) : Composable {
+class NavDemoButton(val menu: SceneMenu) : Composable {
 
     private val isHovered = mutableStateOf(false)
     private val animator = AnimatedFloat(0.25f)
@@ -19,7 +19,7 @@ class NavDemoButton(val menu: DemoMenu) : Composable {
             .onEnter { isHovered.set(true) }
             .onExit { isHovered.set(false) }
             .onClick {
-                menu.content.set(DemoMenu.MenuContent.Demos)
+                menu.content.set(SceneMenu.MenuContent.Demos)
                 animator.start()
             }
 
@@ -31,8 +31,8 @@ class NavDemoButton(val menu: DemoMenu) : Composable {
             val animationP = animator.progressAndUse()
             val buttonColor = if (isHovered.use()) colors.primary else Color.WHITE
             val bgColor = when {
-                isHovered.value -> colors.primaryVariantAlpha(DemoMenu.navBarButtonHoveredAlpha)
-                menu.content.value == DemoMenu.MenuContent.Demos -> colors.primaryVariantAlpha(DemoMenu.navBarButtonSelectedAlpha)
+                isHovered.value -> colors.primaryVariantAlpha(SceneMenu.navBarButtonHoveredAlpha)
+                menu.content.value == SceneMenu.MenuContent.Demos -> colors.primaryVariantAlpha(SceneMenu.navBarButtonSelectedAlpha)
                 else -> null
             }
             bgColor?.let {

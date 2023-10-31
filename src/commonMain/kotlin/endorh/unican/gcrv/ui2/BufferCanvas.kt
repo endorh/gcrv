@@ -1,6 +1,7 @@
 package endorh.unican.gcrv.ui2
 
-import de.fabmax.kool.math.Vec2i
+import de.fabmax.kool.math.MutableVec2f
+import de.fabmax.kool.math.MutableVec2i
 import de.fabmax.kool.pipeline.BufferedTexture2d
 import de.fabmax.kool.pipeline.TexFormat
 import de.fabmax.kool.pipeline.TextureData2d
@@ -8,10 +9,7 @@ import de.fabmax.kool.pipeline.TextureProps
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.Uint8Buffer
 import de.fabmax.kool.util.createUint8Buffer
-import endorh.unican.gcrv.util.I
-import endorh.unican.gcrv.util.RGBA
-import endorh.unican.gcrv.util.U
-import endorh.unican.gcrv.util.toByteArray
+import endorh.unican.gcrv.util.*
 import kotlin.jvm.JvmInline
 
 /**
@@ -76,11 +74,16 @@ open class BufferCanvas(
       }
    override val texture = BufferedTexture2d(textureData, TextureProps(texFormat), "CanvasTexture")
 
+   override fun MutableVec2f.convertToCanvasCoordinates() = apply {
+      x += origin.x
+      y += origin.y
+   }
+
    /**
     * Canvas origin (top left corner) position.
     * Affects canvas accessors.
     */
-   val origin = Vec2i.ZERO
+   val origin = MutableVec2i()
 
    /**
     * Update the texture to reflect the current buffer contents.
@@ -134,8 +137,8 @@ open class BufferCanvas(
    operator fun get(index: Int): Int {
       checkIndex(index)
       val base = index * 4
-      return buffer[base].toInt() shl 24 or (buffer[base + 1].toInt() shl 16) or
-         (buffer[base + 2].toInt() shl 8) or buffer[base + 3].toInt()
+      return (buffer[base].toInt() and 0xFF shl 24) or (buffer[base + 1].toInt() and 0xFF shl 16) or
+         (buffer[base + 2].toInt() and 0xFF shl 8) or (buffer[base + 3].toInt() and 0xFF)
    }
    operator fun set(index: Int, value: Int) {
       checkIndex(index)
@@ -301,6 +304,18 @@ open class BufferCanvas(
    @JvmInline value class ColorAccessor(private val canvas: BufferCanvas) {
       operator fun get(x: Int, y: Int) = canvas[x, y].RGBA.C
       operator fun set(x: Int, y: Int, color: Color) = canvas.set(x, y, color.RGBA.I)
+
+      /**
+       * Provides merged [Color] writing to the canvas.
+       *
+       * When setting a pixel to a semi-transparent color, it will be mixed with the color already in the canvas.
+       * @see Color.paintOver
+       */
+      inline val M get() = MergeAccessor(this)
+      @JvmInline value class MergeAccessor(private val color: ColorAccessor) {
+         operator fun get(x: Int, y: Int) = color[x, y]
+         operator fun set(x: Int, y: Int, added: Color) = color.set(x, y, added.paintOver(color[x, y]))
+      }
    }
 
    /**
@@ -367,6 +382,18 @@ open class BufferCanvas(
       @JvmInline value class ColorAccessor(private val fenced: FencedAccessor) {
          operator fun get(x: Int, y: Int) = fenced[x, y].RGBA.C
          operator fun set(x: Int, y: Int, color: Color) = fenced.set(x, y, color.RGBA.I)
+
+         /**
+          * Provides merged [Color] writing to the canvas.
+          *
+          * When setting a pixel to a semi-transparent color, it will be mixed with the color already in the canvas.
+          * @see Color.paintOver
+          */
+         inline val M get() = MergeAccessor(this)
+         @JvmInline value class MergeAccessor(private val color: ColorAccessor) {
+            operator fun get(x: Int, y: Int) = color[x, y]
+            operator fun set(x: Int, y: Int, added: Color) = color.set(x, y, added.paintOver(color[x, y]))
+         }
       }
 
       /**

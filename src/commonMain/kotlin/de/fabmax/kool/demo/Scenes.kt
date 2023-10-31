@@ -79,12 +79,12 @@ object Scenes {
             return sceneColors.getColor(fromColor + f * (toColor - fromColor))
         }
 
-        fun entry(id: String, title: String, factory: (KoolContext) -> DemoScene) {
+        fun entry(id: String, title: String, factory: (KoolContext) -> SimpleScene) {
             entries += Entry(this, id, title, factory)
         }
     }
 
-    class Entry(val category: Category, val id: String, val title: String, val newInstance: (KoolContext) -> DemoScene) {
+    class Entry(val category: Category, val id: String, val title: String, val newInstance: (KoolContext) -> SimpleScene) {
         val color: Color
             get() {
                 val catIdx = max(0, category.entries.indexOf(this)).toFloat()

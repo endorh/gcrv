@@ -9,7 +9,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-class NavSettingsButton(val menu: DemoMenu) : Composable {
+class NavSettingsButton(val menu: SceneMenu) : Composable {
 
     private val isHovered = mutableStateOf(false)
     private val animator = AnimatedFloat(0.25f)
@@ -50,7 +50,7 @@ class NavSettingsButton(val menu: DemoMenu) : Composable {
             .onEnter { isHovered.set(true) }
             .onExit { isHovered.set(false) }
             .onClick {
-                menu.content.set(DemoMenu.MenuContent.Settings)
+                menu.content.set(SceneMenu.MenuContent.Settings)
                 animator.start()
             }
 
@@ -62,8 +62,8 @@ class NavSettingsButton(val menu: DemoMenu) : Composable {
             val animationP = animator.progressAndUse()
             val buttonColor = if (isHovered.use()) colors.primary else Color.WHITE
             val bgColor = when {
-                isHovered.value -> colors.primaryVariantAlpha(DemoMenu.navBarButtonHoveredAlpha)
-                menu.content.value == DemoMenu.MenuContent.Settings -> colors.primaryVariantAlpha(DemoMenu.navBarButtonSelectedAlpha)
+                isHovered.value -> colors.primaryVariantAlpha(SceneMenu.navBarButtonHoveredAlpha)
+                menu.content.value == SceneMenu.MenuContent.Settings -> colors.primaryVariantAlpha(SceneMenu.navBarButtonSelectedAlpha)
                 else -> null
             }
             bgColor?.let {

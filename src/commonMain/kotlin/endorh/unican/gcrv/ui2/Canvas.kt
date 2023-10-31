@@ -1,6 +1,7 @@
 package endorh.unican.gcrv.ui2
 
 import de.fabmax.kool.KoolContext
+import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.pipeline.Shader
@@ -14,6 +15,10 @@ import kotlin.math.min
 
 interface CanvasScope : UiScope {
    override val modifier: CanvasModifier
+
+   fun Vec2f.toCanvasCoordinates(): MutableVec2f = MutableVec2f(this).convertToCanvasCoordinates()
+   fun MutableVec2f.convertToCanvasCoordinates(): MutableVec2f = this
+   val PointerEvent.canvasPosition: MutableVec2f get() = position.convertToCanvasCoordinates()
 }
 
 interface Canvas {
@@ -34,6 +39,9 @@ interface Canvas {
     * The texture displaying the canvas contents.
     */
    val texture: Texture2d
+
+   fun Vec2f.toCanvasCoordinates(): Vec2f = MutableVec2f(this).convertToCanvasCoordinates()
+   fun MutableVec2f.convertToCanvasCoordinates(): MutableVec2f = this
 }
 
 data class UvRect(
@@ -125,6 +133,36 @@ inline fun UiScope.Canvas(
 
 open class CanvasNode(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface), CanvasScope {
    override val modifier = CanvasModifier(surface)
+
+   override fun MutableVec2f.convertToCanvasCoordinates(): MutableVec2f {
+      val cw = canvasWidth.value
+      val ch = canvasHeight.value
+      val aw = widthPx
+      val ah = heightPx
+      when (val size = modifier.canvasSize) {
+         CanvasSize.FitContent -> {
+            if (aw > cw) x -= (aw - cw) / 2F
+            else y -= (ah - ch) / 2F
+         }
+         CanvasSize.Stretch -> {
+            x *= cw / aw
+            y *= ch / ah
+         }
+         CanvasSize.ZoomContent -> {
+            val s = min(cw / aw, ch / ah)
+            x = (x - aw / 2F) * s + cw / 2F
+            y = (y - ah / 2F) * s + ch / 2F
+         }
+         is CanvasSize.FixedScale -> {
+            x /= size.scale
+            y /= size.scale
+         }
+      }
+      modifier.canvas?.run {
+         convertToCanvasCoordinates()
+      }
+      return this
+   }
 
    val canvasWidth = mutableStateOf(1)
    val canvasHeight = mutableStateOf(1)

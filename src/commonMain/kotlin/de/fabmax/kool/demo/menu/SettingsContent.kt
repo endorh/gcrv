@@ -5,7 +5,7 @@ import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.MsdfFont
 
-class SettingsContent(val menu: DemoMenu) : Composable {
+class SettingsContent(val menu: SceneMenu) : Composable {
     override fun UiScope.compose() = Column {
         modifier
             .height(Grow.Std)
@@ -17,8 +17,8 @@ class SettingsContent(val menu: DemoMenu) : Composable {
                 .height(UiSizes.baseSize)
                 .padding(horizontal = UiSizes.hGap)
                 .textAlignY(AlignmentY.Center)
-                .background(TitleBgRenderer(DemoMenu.titleBgMesh, 0.75f, 0.95f))
-                .font((sizes.largeText as MsdfFont).copy(glowColor = DemoMenu.titleTextGlowColor))
+                .background(TitleBgRenderer(SceneMenu.titleBgMesh, 0.75f, 0.95f))
+                .font((sizes.largeText as MsdfFont).copy(glowColor = SceneMenu.titleTextGlowColor))
                 .textColor(Color.WHITE)
         }
 
@@ -41,7 +41,7 @@ class SettingsContent(val menu: DemoMenu) : Composable {
         LabeledSwitch("Fullscreen", Settings.isFullscreen)
         LabeledSwitch("Hidden demos", Settings.showHiddenDemos)
 
-        menu.demoLoader.activeDemo?.let {
+        menu.sceneLoader.activeDemo?.let {
             LabeledSwitch("Show demo menu", it.isMenu)
         }
     }

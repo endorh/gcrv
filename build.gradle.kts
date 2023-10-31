@@ -14,6 +14,9 @@ repositories {
 kotlin {
     jvm {
         jvmToolchain(11)
+        mainRun {
+            mainClass.set("endorh.unican.gcrv.line_algorithms.MainKt")
+        }
     }
     js(IR) {
         binaries.executable()

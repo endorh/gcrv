@@ -5,7 +5,7 @@ import de.fabmax.kool.math.Vec3f
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 
-class DrawerButton(val menu: DemoMenu) : Composable {
+class DrawerButton(val menu: SceneMenu) : Composable {
 
     private val isHovered = mutableStateOf(false)
     private val animator = AnimatedFloat(0.25f)
@@ -33,7 +33,7 @@ class DrawerButton(val menu: DemoMenu) : Composable {
             val animationP = if (menu.isExpanded) p else 1f - p
 
             if (menu.isExpanded && isHovered.value) {
-                val bgColor = colors.primaryVariantAlpha(DemoMenu.navBarButtonHoveredAlpha)
+                val bgColor = colors.primaryVariantAlpha(SceneMenu.navBarButtonHoveredAlpha)
                 getUiPrimitives().localRect(0f, 0f, widthPx, heightPx, bgColor)
             }
 

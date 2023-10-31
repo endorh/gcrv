@@ -3,8 +3,12 @@ package endorh.unican.gcrv.windows
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.modules.ui2.docking.UiDockable
 import endorh.unican.gcrv.LineAlgorithmsScene
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
-abstract class BaseWindow(name: String, val scene: LineAlgorithmsScene, isClosable: Boolean = true) {
+abstract class BaseWindow(name: String, val scene: LineAlgorithmsScene, isClosable: Boolean = true) : CoroutineScope {
+    override val coroutineContext = scene.coroutineContext
     val windowDockable = UiDockable(name, scene.dock)
 
     val windowSurface = WindowSurface(windowDockable) {
@@ -45,7 +49,9 @@ abstract class BaseWindow(name: String, val scene: LineAlgorithmsScene, isClosab
 
     protected abstract fun UiScope.windowContent(): Any
 
-    open fun onClose() { }
+    open fun onClose() {
+        coroutineContext.cancel()
+    }
 
     protected fun UiScope.applyThemeBackgroundColor() {
         val borderColor = colors.secondaryVariantAlpha(0.3f)

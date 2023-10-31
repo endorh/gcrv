@@ -4,8 +4,6 @@ package endorh.unican.gcrv.util
 
 import de.fabmax.kool.util.Uint8Buffer
 
-// expect fun Uint8Buffer.asUint32Buffer(): Uint32Buffer
-
 fun Uint8Buffer.getInt(i: Int): Int {
    val b = i * 4
    return this[b].toInt() shl 24 or (this[b + 1].toInt() shl 16) or
