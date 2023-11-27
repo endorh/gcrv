@@ -1,12 +1,12 @@
 package endorh.unican.gcrv.windows
 
 import de.fabmax.kool.modules.ui2.*
-import endorh.unican.gcrv.LineAlgorithmsScene
+import endorh.unican.gcrv.EditorScene
 import endorh.unican.gcrv.ui2.Section
 import endorh.unican.gcrv.ui2.onClick
 import kotlin.reflect.KClass
 
-class MenuWindow(scene: LineAlgorithmsScene) : BaseWindow("Menu", scene, false) {
+class MenuWindow(scene: EditorScene) : BaseWindow("Menu", scene, false) {
 
     init {
         windowDockable.setFloatingBounds(width = Dp(250f))
@@ -18,7 +18,7 @@ class MenuWindow(scene: LineAlgorithmsScene) : BaseWindow("Menu", scene, false) 
         Button("Canvas") {
             launcherButtonStyle("Canvas window")
             onClick {
-                launchOrBringToTop(multi) { LineCanvasWindow(scene) }
+                launchOrBringToTop(multi) { CanvasWindow(scene) }
             }
         }
         Button("Tool") {

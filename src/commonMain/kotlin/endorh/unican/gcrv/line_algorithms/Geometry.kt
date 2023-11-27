@@ -6,11 +6,22 @@ import endorh.unican.gcrv.ui2.BufferCanvas
 import endorh.unican.gcrv.util.F
 import kotlin.jvm.JvmInline
 
+data class PointStyle(
+   val color: Color,
+   val size: Float = 1F,
+   val renderer: Point2DRenderer? = null
+)
+
 data class LineStyle(
    val color: Color,
    val breadth: Float = 1F,
    val renderer: Line2DRenderer? = null
 )
+
+data class Point2D(val pos: Vec2i, val style: PointStyle) {
+   val x get() = pos.x
+   val y get() = pos.y
+}
 
 data class Line2D(val start: Vec2i, val end: Vec2i, val style: LineStyle) {
    val dx get() = end.x - start.x
@@ -85,14 +96,14 @@ data class Line2D(val start: Vec2i, val end: Vec2i, val style: LineStyle) {
    }
 }
 
-interface Line2DRenderer {
-   val name: String
-   fun PixelRendererContext.render(line: Line2D)
-}
-
 interface Point2DRenderer {
    val name: String
    fun PixelRendererContext.render(point: Vec2i, size: Int)
+}
+
+interface Line2DRenderer {
+   val name: String
+   fun PixelRendererContext.render(line: Line2D)
 }
 
 interface PixelRendererContext {

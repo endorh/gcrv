@@ -81,6 +81,7 @@ open class CanvasModifier(surface: UiSurface) : UiModifier(surface) {
    var customShader: Shader? by property(null)
    var canvasZ: Int by property(0)
    var canvasSize: CanvasSize by property(CanvasSize.FitContent)
+   var invertY: Boolean by property(false)
    var uvRect: UvRect? by property(UvRect.Y_FLIP)
 }
 
@@ -106,6 +107,10 @@ fun <T : CanvasModifier> T.customShader(shader: Shader): T = apply {
 
 fun <T : CanvasModifier> T.uvRect(uvRect: UvRect?): T = apply {
    this.uvRect = uvRect
+}
+
+fun <T : CanvasModifier> T.invertY(y: Boolean): T = apply {
+   invertY = y
 }
 
 sealed class CanvasSize {
@@ -139,6 +144,7 @@ open class CanvasNode(parent: UiNode?, surface: UiSurface) : UiNode(parent, surf
       val ch = canvasHeight.value
       val aw = widthPx
       val ah = heightPx
+      if (modifier.invertY) y = ah - y
       when (val size = modifier.canvasSize) {
          CanvasSize.FitContent -> {
             if (aw > cw) x -= (aw - cw) / 2F

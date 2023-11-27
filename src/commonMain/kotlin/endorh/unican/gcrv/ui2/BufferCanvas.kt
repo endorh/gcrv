@@ -65,6 +65,7 @@ open class BufferCanvas(
    protected val texFormat = TexFormat.RGBA
    protected val pixelCount = width * height
    protected val bufferSize = width * height * texFormat.channels
+   private var withinBatchUpdate: Boolean = false
 
    protected val buffer: Uint8Buffer = createUint8Buffer(bufferSize)
    protected var textureData = TextureData2d(buffer, width, height, texFormat)
@@ -102,12 +103,18 @@ open class BufferCanvas(
 
    /**
     * Perform a batch of update operations, and then call [update] to update the texture.
+    *
+    * Batch updates are re-entrant, meaning if they happen within another batch update, only the
+    * outer update will perform a texture update.
     */
    fun update(changes: BufferCanvas.() -> Unit) = apply {
+      if (withinBatchUpdate) return@apply
+      withinBatchUpdate = true
       val prev = autoUpdate
       autoUpdate = false
       changes()
       autoUpdate = prev
+      withinBatchUpdate = false
       update()
    }
 

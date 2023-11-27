@@ -8,8 +8,8 @@ import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.RenderLoop
-import endorh.unican.gcrv.LineAlgorithmsScene
-import endorh.unican.gcrv.line_algorithms.LineObject2D
+import endorh.unican.gcrv.EditorScene
+import endorh.unican.gcrv.objects.LineObject2D
 import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.*
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class LineCanvasWindow(scene: LineAlgorithmsScene) : BaseWindow("Canvas", scene) {
+class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
     var lastPoint: Vec2i? = null
 
     val canvasSize: MutableStateValue<Vec2i> = mutableStateOf(Vec2i(10, 10)).onChange {
@@ -99,7 +99,7 @@ class LineCanvasWindow(scene: LineAlgorithmsScene) : BaseWindow("Canvas", scene)
 
     protected fun resize(width: Int, height: Int, centerX: Int, centerY: Int) {
         canvasState.value = makeCanvas(width, height, centerX, centerY)
-        doUpdateCanvas(LineAlgorithmsScene.CanvasUpdateEvent())
+        doUpdateCanvas(EditorScene.CanvasUpdateEvent())
     }
 
     private lateinit var lastCanvasScope: CanvasScope
@@ -117,6 +117,8 @@ class LineCanvasWindow(scene: LineAlgorithmsScene) : BaseWindow("Canvas", scene)
             Canvas(canvasState.use(), "Canvas") {
                 lastCanvasScope = this
                 modifier
+                    .invertY(true)
+                    .uvRect(UvRect.FULL)
                     .canvasSize(CanvasSize.FixedScale(1F))
                     .size(Dp.fromPx(size.x.F), Dp.fromPx(size.y.F))
                     .onClick {
@@ -127,7 +129,7 @@ class LineCanvasWindow(scene: LineAlgorithmsScene) : BaseWindow("Canvas", scene)
                                 F.C[x, y] = Color.WHITE
                             }
                             lastPoint = if (last != null) {
-                                scene.drawObject(LineObject2D(last, Vec2i(x, y), scene.toolLineStyle.value))
+                                scene.drawObject(LineObject2D(last, Vec2i(x, y), scene.toolLineStyle.value.copy()))
                                 null
                             } else Vec2i(x, y)
                         }
@@ -157,7 +159,7 @@ class LineCanvasWindow(scene: LineAlgorithmsScene) : BaseWindow("Canvas", scene)
                         lastDragStart?.let { s ->
                             val (sx, sy) = s
                             val (x, y) = it.position.round
-                            origin.value = Vec2i(lastDragOrigin.x + sx - x, lastDragOrigin.y + sy - y)
+                            origin.value = Vec2i(lastDragOrigin.x + sx - x, lastDragOrigin.y - sy + y)
                             PointerInput.cursorShape = CursorShape.HAND
                         }
                     }
@@ -209,14 +211,14 @@ class LineCanvasWindow(scene: LineAlgorithmsScene) : BaseWindow("Canvas", scene)
         return size
     }
 
-    suspend fun updateCanvas(event: LineAlgorithmsScene.CanvasUpdateEvent) {
+    suspend fun updateCanvas(event: EditorScene.CanvasUpdateEvent) {
         // If we attempt to upload textures to GPU from a work thread OpenGL can crash
         withContext(Dispatchers.RenderLoop) {
             doUpdateCanvas(event)
         }
     }
 
-    fun doUpdateCanvas(event: LineAlgorithmsScene.CanvasUpdateEvent) {
+    fun doUpdateCanvas(event: EditorScene.CanvasUpdateEvent) {
         if (event.clear) pipeline.clear(canvas)
         pipeline.render(canvas)
     }

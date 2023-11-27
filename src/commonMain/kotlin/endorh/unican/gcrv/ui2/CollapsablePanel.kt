@@ -4,12 +4,26 @@ import de.fabmax.kool.modules.ui2.*
 
 fun UiScope.Section(title: String, expanded: Boolean = true, body: UiScope.() -> Unit) {
    val panel = remember { CollapsablePanel(title, expanded, body) }
+   panel.setup(title, expanded, body)
    panel()
 }
 
-open class CollapsablePanel(val title: String, expanded: Boolean, val body: UiScope.() -> Unit) : Composable {
+open class CollapsablePanel(
+   var title: String,
+   var expanded: Boolean,
+   var body: UiScope.() -> Unit
+) : Composable {
    val isCollapsed = mutableStateOf(!expanded)
    val isHovered = mutableStateOf(false)
+
+   fun setup(title: String, expanded: Boolean, body: UiScope.() -> Unit) {
+      this.title = title
+      if (this.expanded != expanded) {
+         isCollapsed.value = !expanded
+         this.expanded = expanded
+      }
+      this.body = body
+   }
 
    override fun UiScope.compose() = Column(Grow.Std) {
       modifier.backgroundColor(colors.backgroundVariant)

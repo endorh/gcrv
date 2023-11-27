@@ -1,15 +1,16 @@
 package endorh.unican.gcrv.windows
 
 import de.fabmax.kool.modules.ui2.*
-import endorh.unican.gcrv.LineAlgorithmsScene
+import endorh.unican.gcrv.EditorScene
 import endorh.unican.gcrv.line_algorithms.renderers.LineRendererPicker
 import endorh.unican.gcrv.line_algorithms.renderers.PointRendererPicker
 import endorh.unican.gcrv.line_algorithms.ui.LabeledField
 import endorh.unican.gcrv.line_algorithms.ui.LabeledBooleanField
 import endorh.unican.gcrv.line_algorithms.ui.LabeledColorField
 import endorh.unican.gcrv.line_algorithms.ui.LabeledIntField
+import endorh.unican.gcrv.ui2.Section
 
-class RenderSettingsWindow(scene: LineAlgorithmsScene) : BaseWindow("Render Settings", scene, true) {
+class RenderSettingsWindow(scene: EditorScene) : BaseWindow("Render Settings", scene, true) {
     init {
         windowDockable.setFloatingBounds(width = Dp(250f), height = Dp(300f))
     }
@@ -19,22 +20,32 @@ class RenderSettingsWindow(scene: LineAlgorithmsScene) : BaseWindow("Render Sett
     ) {
         modifier.width(Grow.Std)
         Column(Grow.Std) {
-            // modifier.width(Grow.Std)
-            LabeledField("Line Renderer") {
-                LineRendererPicker(scene.wireframeSettings.fallbackLineRenderer) { it() }
+            Section("Layers") {
+                LabeledBooleanField("Axes", scene.axesPass.enabled)
+                // LabeledBooleanField("Grid", scene.gridPass.enabled, { scene.gridPass.enabled = it })
+                LabeledBooleanField("Geo Wires", scene.geoWireframePass.enabled)
+                LabeledBooleanField("Geo Points", scene.geoPointPass.enabled)
+                LabeledBooleanField("Wireframe", scene.wireframePass.enabled)
+                LabeledBooleanField("Points", scene.pointPass.enabled)
             }
-            LabeledBooleanField("Enforce for all lines", scene.wireframeSettings.enforceLineRenderer)
-            LabeledColorField("Line Color", scene.wireframeSettings.fallbackLineColor)
-            LabeledBooleanField("Enforce for all lines", scene.wireframeSettings.enforceLineColor)
-
-            LabeledField("Point Renderer") {
-                PointRendererPicker(scene.wireframeSettings.fallbackPointRenderer) { it() }
+            Section("Line Style") {
+                LabeledField("Renderer") {
+                    LineRendererPicker(scene.wireframeSettings.fallbackRenderer) { it() }
+                }
+                LabeledBooleanField("Enforce", scene.wireframeSettings.enforceRenderer)
+                LabeledColorField("Color", scene.wireframeSettings.fallbackColor)
+                LabeledBooleanField("Enforce", scene.wireframeSettings.enforceColor)
             }
-            LabeledIntField("Point Size", scene.wireframeSettings.pointSize)
-            LabeledBooleanField("Enforce for all points", scene.wireframeSettings.enforcePointRenderer)
-            LabeledColorField("Start Point Color", scene.wireframeSettings.startPointColor)
-            LabeledColorField("End Point Color", scene.wireframeSettings.endPointColor)
-            LabeledBooleanField("Enforce for all points", scene.wireframeSettings.enforcePointColor)
+            Section("Point Style") {
+                LabeledField("Renderer") {
+                    PointRendererPicker(scene.pointSettings.fallbackRenderer) { it() }
+                }
+                LabeledBooleanField("Enforce", scene.pointSettings.enforceRenderer)
+                LabeledIntField("Size", scene.pointSettings.fallbackSize)
+                LabeledBooleanField("Enforce", scene.pointSettings.enforceSize)
+                LabeledColorField("Color", scene.pointSettings.fallbackColor)
+                LabeledBooleanField("Enforce", scene.pointSettings.enforceColor)
+            }
         }
     }
 }

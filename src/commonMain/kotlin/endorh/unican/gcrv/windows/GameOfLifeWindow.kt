@@ -6,10 +6,10 @@ import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.ColorGradient
 import de.fabmax.kool.util.MdColor
-import endorh.unican.gcrv.LineAlgorithmsScene
+import endorh.unican.gcrv.EditorScene
 import kotlin.math.min
 
-class GameOfLifeWindow(scene: LineAlgorithmsScene) : BaseWindow("Conway`s Game of Life", scene) {
+class GameOfLifeWindow(scene: EditorScene) : BaseWindow("Conway`s Game of Life", scene) {
 
     private val world = GameWorld()
     private val worldRenderer = GameWorldRenderer()

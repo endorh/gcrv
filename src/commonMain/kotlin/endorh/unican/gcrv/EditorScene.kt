@@ -14,19 +14,24 @@ import de.fabmax.kool.pipeline.Texture2d
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.launchDelayed
+import endorh.unican.gcrv.animation.PlaybackManager
+import endorh.unican.gcrv.animation.TimeLine
 import endorh.unican.gcrv.line_algorithms.*
+import endorh.unican.gcrv.line_algorithms.renderers.line.BresenhamRenderer
 import endorh.unican.gcrv.line_algorithms.renderers.line.BresenhamRendererBreadth
 import endorh.unican.gcrv.line_algorithms.renderers.point.CircleAntiAliasPointRenderer
-import endorh.unican.gcrv.line_algorithms.renderers.point.CirclePointRenderer
 import endorh.unican.gcrv.ui2.BufferCanvas
 import endorh.unican.gcrv.windows.*
+import endorh.unican.gcrv.objects.AnimProperty
+import endorh.unican.gcrv.objects.Object2D
+import endorh.unican.gcrv.objects.Object2DStack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.coroutines.CoroutineContext
 
-class LineAlgorithmsScene : SimpleScene("Line Algorithms"), CoroutineScope {
+class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
     override val coroutineContext: CoroutineContext = Dispatchers.Default
 
     val canvasSize = mutableStateOf(Vec2i(720, 480))
@@ -40,36 +45,76 @@ class LineAlgorithmsScene : SimpleScene("Line Algorithms"), CoroutineScope {
     }
 
     val canvasUpdates = MutableStateFlow(CanvasUpdateEvent())
-
     val toolLineStyle = mutableStateOf(LineStyle(Color.WHITE))
-
     val wireframeSettings = WireframeRenderingSettings(
         mutableStateOf<Line2DRenderer>(BresenhamRendererBreadth).affectsCanvas(),
         mutableStateOf(false).affectsCanvas(),
         mutableStateOf(Color.WHITE).affectsCanvas(),
         mutableStateOf(false).affectsCanvas(),
+    )
+    val pointSettings = PointRenderingSettings(
         mutableStateOf<Point2DRenderer>(CircleAntiAliasPointRenderer).affectsCanvas(),
         mutableStateOf(false).affectsCanvas(),
-        mutableStateOf(Color.RED).affectsCanvas(),
-        mutableStateOf(Color.BLUE).affectsCanvas(),
-        mutableStateOf(true).affectsCanvas(),
+        mutableStateOf(Color.WHITE).affectsCanvas(),
+        mutableStateOf(false).affectsCanvas(),
         mutableStateOf(5).affectsCanvas(),
+        mutableStateOf(false).affectsCanvas(),
     )
+    val timeLine = mutableStateOf(TimeLine())
+    val playbackManager = mutableStateOf(PlaybackManager(coroutineContext, timeLine.value))
+    val selectedProperties = mutableStateOf<List<AnimProperty<*>>>(emptyList())
 
     val objectStack = Object2DStack()
     val selectedObjects = mutableStateListOf<Object2D>()
+
+    val axesPass = AxesRenderPass2D()
+    val geoWireframePass = WireframeRenderPass2D(
+        WireframeRenderingSettings(
+            mutableStateOf(BresenhamRenderer),
+            mutableStateOf(true),
+            mutableStateOf(Color.GRAY.withAlpha(0.4F)),
+            mutableStateOf(true)
+        ), ignoreTransforms = true)
+    val geoPointPass = PointRenderPass2D(
+        PointRenderingSettings(
+            mutableStateOf(CircleAntiAliasPointRenderer),
+            mutableStateOf(true),
+            mutableStateOf(Color.GRAY.withAlpha(0.4F)),
+            mutableStateOf(true),
+            mutableStateOf(5),
+            mutableStateOf(true),
+        ), ignoreTransforms = true)
+    val wireframePass = WireframeRenderPass2D(wireframeSettings)
+    val pointPass = PointRenderPass2D(pointSettings)
+
     val pipeline: RenderingPipeline2D = RenderingPipeline2D(objectStack, listOf(
-        AxesRenderPass2D(),
-        WireframeRenderPass2D(wireframeSettings),
+        axesPass,
+        geoWireframePass, geoPointPass,
+        wireframePass, pointPass
     ))
 
-    val selectedColors = mutableStateOf(Colors.darkColors()).onChange { dock.dockingSurface.colors = it }
+    init {
+       for (p in pipeline.renderPasses)
+           p.enabled.affectsCanvas()
+    }
+
+    val selectedColors = mutableStateOf(Colors.darkColors(
+        Color("55A4CDFF"),
+        Color("789DA6F0"),
+        Color("6797A4FF"),
+        Color("69797CFF"),
+        Color("2B2B2BFF"),
+        Color("80808042"),
+        Color("FFFFFFFF"),
+        Color("FFFFFFFF"),
+        Color("D4DBDDFF"),
+    )).onChange { dock.dockingSurface.colors = it }
     val selectedUiSize = mutableStateOf(Sizes.medium)
 
     val dock = Dock()
     val subWindows = mutableListOf<BaseWindow>()
 
-    private val windowSpawnLocation = MutableVec2f(320f, 64f)
+    private val windowSpawnLocation = MutableVec2f(320F, 64F)
 
     var exampleImage: Texture2d? = null
 
@@ -79,6 +124,9 @@ class LineAlgorithmsScene : SimpleScene("Line Algorithms"), CoroutineScope {
 
     fun drawObject(obj: Object2D, update: Boolean = true) {
         obj.onPropertyChange { updateCanvas() }
+        obj.properties.allProperties.forEach {
+            it.timeLine.value = timeLine.value
+        }
         objectStack.objects += obj
         if (update) updateCanvas()
     }
@@ -112,12 +160,12 @@ class LineAlgorithmsScene : SimpleScene("Line Algorithms"), CoroutineScope {
         dock.createNodeLayout(
             listOf(
                 "0:row",
-                "0:row/0:leaf",
+                "0:row/0:col",
+                "0:row/0:col/0:leaf",
+                "0:row/0:col/1:leaf",
                 "0:row/1:col",
                 "0:row/1:col/0:leaf",
-                "0:row/1:col/1:row",
-                "0:row/1:col/1:row/0:leaf",
-                "0:row/1:col/1:row/1:leaf",
+                "0:row/1:col/1:leaf",
                 "0:row/2:col",
                 "0:row/2:col/0:leaf",
                 "0:row/2:col/1:leaf"
@@ -134,11 +182,13 @@ class LineAlgorithmsScene : SimpleScene("Line Algorithms"), CoroutineScope {
         dock.getLeafAtPath("0:row/1:col/0:leaf")?.dock(centerSpacer)
 
         // Spawn initial windows
-        val scene = this@LineAlgorithmsScene
-        spawnWindow(MenuWindow(scene), "0:row/0:leaf")
-        spawnWindow(LineCanvasWindow(scene), "0:row/1:col/0:leaf")
-        spawnWindow(RenderSettingsWindow(scene), "0:row/1:col/1:row/0:leaf")
-        spawnWindow(ToolWindow(scene), "0:row/1:col/1:row/1:leaf")
+        val scene = this@EditorScene
+        spawnWindow(MenuWindow(scene), "0:row/0:col/0:leaf")
+        spawnWindow(CanvasWindow(scene), "0:row/1:col/0:leaf")
+        spawnWindow(RenderSettingsWindow(scene), "0:row/0:col/1:leaf")
+        spawnWindow(ToolWindow(scene), "0:row/0:col/0:leaf")
+        spawnWindow(TransformWindow(scene), "0:row/0:col/0:leaf")
+        spawnWindow(TimeLineWindow(scene), "0:row/1:col/1:leaf")
         spawnWindow(OutlinerWindow(scene), "0:row/2:col/0:leaf")
         spawnWindow(InspectorWindow(scene), "0:row/2:col/1:leaf")
     }

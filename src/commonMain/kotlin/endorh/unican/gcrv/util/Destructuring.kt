@@ -32,3 +32,4 @@ inline val Vec2f.round get() = Vec2fRoundAccessor(this)
 }
 
 fun Vec2f.toVec2i() = Vec2i(x.roundToInt(), y.roundToInt())
+fun Vec2i.toVec2f() = Vec2f(x.F, y.F)

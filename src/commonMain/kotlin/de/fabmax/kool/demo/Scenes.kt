@@ -4,7 +4,8 @@ import de.fabmax.kool.KoolContext
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.ColorGradient
 import de.fabmax.kool.util.MdColor
-import endorh.unican.gcrv.LineAlgorithmsScene
+import endorh.unican.gcrv.FractalsScene
+import endorh.unican.gcrv.EditorScene
 import kotlin.math.max
 
 object Scenes {
@@ -28,7 +29,8 @@ object Scenes {
     )
 
     val practiceScenes = Category("Practice", false, 0f, 0.15f).apply {
-        entry("line-algorithms", "Line Algorithms") { LineAlgorithmsScene() }
+        entry("line-algorithms", "Line Algorithms") { EditorScene() }
+        entry("fractals", "Fractals") { FractalsScene() }
     }
 
     // val physicsDemos = Category("Physics", false, 0.2f, 0.35f).apply {
