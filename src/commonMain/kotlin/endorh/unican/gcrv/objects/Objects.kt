@@ -2,11 +2,13 @@ package endorh.unican.gcrv.objects
 
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.math.Vec2i
-import de.fabmax.kool.modules.ui2.UiScope
-import de.fabmax.kool.modules.ui2.UiSurface
-import de.fabmax.kool.modules.ui2.mutableStateListOf
+import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
+import endorh.unican.gcrv.animation.TimeLine
 import endorh.unican.gcrv.line_algorithms.*
+import endorh.unican.gcrv.objects.property.*
+import endorh.unican.gcrv.transformations.Transform2D
+import endorh.unican.gcrv.transformations.TransformProperty
 import endorh.unican.gcrv.util.div
 import endorh.unican.gcrv.util.plus
 import endorh.unican.gcrv.util.toVec2f
@@ -17,41 +19,43 @@ class Object2DStack {
    val objects = mutableStateListOf<Object2D>()
 }
 
-abstract class Object2D(val type: Object2DType<out Object2D> = Object2DType("Object")) {
+abstract class Object2D(val type: Object2DType<out Object2D> = Object2DType("Object")) : PropertyHolder {
    private val geometricProperties = mutableListOf<Vec2fProperty>()
    val geometry: List<Vec2fProperty> get() = geometricProperties
-   val properties = PropertyMap()
+   override val properties = PropertyMap()
+   override val timeLine = mutableStateOf<TimeLine?>(null)
 
-   var name: String by string(type.generateName()).unique()
+   var name: String by string(type.generateName()).unique().static() priority 100
+
    open val children: List<Object2D> get() = emptyList()
    open val renderers: List<Renderer2D> = emptyList()
 
-   val transform by transform()
-   val globalTransform by transform()
+   val localTransforms by list { TransformProperty() } priority -10
+   val globalTransforms by list { TransformProperty() } priority -10
 
    val aggregatedTransform get() =
-      globalTransform.transform * transform.transform.localize(geometricCenter)
+      globalTransforms.entries
+         .map { it.transform }
+         .fold(Transform2D.identity) { acc, t -> t * acc } *
+      localTransforms.entries
+         .map { it.transform.localize(geometricCenter) }
+         .fold(Transform2D.identity) { acc, t -> t * acc }
    open val geometricCenter: Vec2f get() = Vec2f.ZERO
 
    @Suppress("UNCHECKED_CAST")
    operator fun <T> get(prop: KProperty<T>) = properties[prop.name] as? AnimProperty<T>
       ?: throw IllegalArgumentException("Property ${prop.name} is not an ObjectProperty")
 
-   fun onPropertyChange(block: () -> Unit) = properties.allProperties.forEach { it.onChange { block() } }
+   fun onPropertyChange(block: () -> Unit) = properties.values.forEach { it.onChange { block() } }
 
-   protected operator fun <T> AnimProperty<T>.provideDelegate(thisRef: Object2D, property: KProperty<*>): AnimProperty<T> {
-      name = property.name
-      thisRef.properties.register(this)
-      return this
-   }
-   protected operator fun <P: CompoundAnimProperty> P.provideDelegate(thisRef: Object2D, property: KProperty<*>): P {
-      name = property.name
-      thisRef.properties.register(this)
-      return this
+   protected operator fun <N: PropertyNode> N.provideDelegate(thisRef: Object2D, property: KProperty<*>): N = apply {
+      init(property.name, thisRef)
+      thisRef.register(this)
    }
 
    protected fun geometry(v: Vec2i) = geometry(v.toVec2f())
    protected fun geometry(v: Vec2f) = Vec2fProperty(v).also {
+      it priority 10
       geometricProperties.add(it)
    }
 
@@ -62,6 +66,7 @@ abstract class Object2D(val type: Object2DType<out Object2D> = Object2DType("Obj
       when (val p = properties[prop.name]) {
          is AnimProperty<*> -> p.use(surface)
          is CompoundAnimProperty -> p.allProperties.forEach { it.use(surface) }
+         is PropertyList<*> -> p.allProperties.forEach { it.use(surface) }
          null -> Unit
       }
    }
@@ -106,10 +111,10 @@ class GroupObject2D : Object2D(Type) {
    }
 }
 
-class PointObject2D(pos: Vec2i, style: PointStyle) : Object2D(Type) {
+class PointObject2D(pos: Vec2i, style: PointStyle = PointStyle(Color.WHITE, 7F)) : Object2D(Type) {
    var pos by geometry(pos)
 
-   val style by pointStyle(style)
+   val style by pointStyle(style) priority -20
 
    override val geometricCenter: Vec2f get() = pos
 
@@ -130,15 +135,13 @@ class PointObject2D(pos: Vec2i, style: PointStyle) : Object2D(Type) {
 class LineObject2D(
    start: Vec2i, end: Vec2i,
    style: LineStyle = LineStyle(Color.WHITE),
-   startStyle: PointStyle = PointStyle(Color.WHITE, 4F),
-   endStyle: PointStyle = PointStyle(Color.WHITE, 4F),
+   startStyle: PointStyle = PointStyle(Color.WHITE, 5F),
+   endStyle: PointStyle = PointStyle(Color.WHITE, 5F),
 ) : Object2D(Type) {
    var start by geometry(start)
    var end by geometry(end)
 
-   val style by lineStyle(style)
-   val startStyle by pointStyle(startStyle)
-   val endStyle by pointStyle(endStyle)
+   val style by lineStyle(style, startStyle, endStyle) priority -20
 
    override val geometricCenter: Vec2f get() = (start + end) / 2F
    override val renderers: List<Renderer2D> = listOf(Renderer(this))
@@ -148,7 +151,7 @@ class LineObject2D(
          accept(Line2D(line.start.toVec2i(), line.end.toVec2i(), line.style.lineStyle))
       }
       override fun PointRenderPassInputScope.renderPoints() {
-         accept(Point2D(line.start.toVec2i(), line.startStyle.pointStyle), Point2D(line.end.toVec2i(), line.endStyle.pointStyle))
+         accept(Point2D(line.start.toVec2i(), line.style.start.pointStyle), Point2D(line.end.toVec2i(), line.style.end.pointStyle))
       }
    }
 

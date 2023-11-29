@@ -4,6 +4,7 @@ import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.ui2.BufferCanvas
 import endorh.unican.gcrv.util.F
+import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
 data class PointStyle(

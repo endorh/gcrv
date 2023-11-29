@@ -5,9 +5,12 @@ import endorh.unican.gcrv.line_algorithms.Line2DRenderer
 import endorh.unican.gcrv.line_algorithms.PixelRendererContext
 import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.towards
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+@Serializable @SerialName("bresenham-breadth-anti-alias")
 object BresenhamRendererBreadthAntiAlias : Line2DRenderer {
    override val name = "Bresenham (antialiasing)"
 

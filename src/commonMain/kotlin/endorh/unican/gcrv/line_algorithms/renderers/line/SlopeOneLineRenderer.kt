@@ -3,7 +3,10 @@ package endorh.unican.gcrv.line_algorithms.renderers.line
 import endorh.unican.gcrv.line_algorithms.Line2D
 import endorh.unican.gcrv.line_algorithms.Line2DRenderer
 import endorh.unican.gcrv.line_algorithms.PixelRendererContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable @SerialName("slope-one")
 object SlopeOneLineRenderer : Line2DRenderer {
    override val name = "45-deg (only slope ±1)"
 

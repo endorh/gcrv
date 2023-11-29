@@ -4,7 +4,6 @@ import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.math.Vec2i
 import endorh.unican.gcrv.util.*
 import kotlin.math.*
-import kotlin.math.tan
 
 class Transform2D(
    val a: Float, val b: Float, val c: Float, val d: Float,
@@ -50,9 +49,9 @@ class Transform2D(
       fun reflectY() = Transform2D(-1F, 0F, 0F, 1F, 0F, 0F)
       fun reflectY(center: Vec2f) = translate(center) * reflectY() * translate(-center)
 
-      fun shearX(factor: Float) = Transform2D(1F, 0F, factor, 1F, 0F, 0F)
-      fun shearY(factor: Float) = Transform2D(1F, factor, 0F, 1F, 0F, 0F)
-      fun shear(factor: Vec2f) = Transform2D(1F, factor.y, factor.x, 1F, 0F, 0F)
+      fun shearX(factor: Float) = Transform2D(1F, factor, 0F, 1F, 0F, 0F)
+      fun shearY(factor: Float) = Transform2D(1F, 0F, factor, 1F, 0F, 0F)
+      fun shear(factor: Vec2f) = Transform2D(1F, factor.x, factor.y, 1F, 0F, 0F)
    }
 }
 
@@ -60,16 +59,16 @@ class TaggedTransform2D(
    val rotation: Float,
    val scale: Vec2f,
    val translate: Vec2f,
-   val shearX: Float,
+   val shearY: Float,
 ) {
    fun toTransform() = with (Transform2D) {
-      translate(translate) * rotate(rotation) * shearX(shearX) * scale(scale)
+      translate(translate) * rotate(rotation) * shearY(shearY) * scale(scale)
    }
 
    companion object {
       private val PI_F = PI.F
 
-      fun fromTransform(t: Transform2D): TaggedTransform2D {
+;      fun fromTransform(t: Transform2D): TaggedTransform2D {
          val translate = t * Vec2f.ZERO
          val linear = Transform2D.translate(-translate) * t
          val tx = linear * Vec2f.X_AXIS
@@ -77,10 +76,10 @@ class TaggedTransform2D(
          val rotation = Vec2f.X_AXIS.signedAngle(tx)
          val axisAngle = tx.signedAngle(ty)
          val shearAngle = if (axisAngle < 0) axisAngle + PI_F else axisAngle
-         val shearX = ctg(shearAngle)
+         val shearY = ctg(shearAngle).roundDecimals(4)
          val tys = ty - tx * (tx * ty)
          val scale = Vec2f(tx.length(), tys.length() * sign(axisAngle))
-         val r = TaggedTransform2D(rotation, scale, translate, shearX)
+         val r = TaggedTransform2D(rotation, scale, translate, shearY)
          println("Conversion: $t -> ${r.toTransform()}")
          return r
       }

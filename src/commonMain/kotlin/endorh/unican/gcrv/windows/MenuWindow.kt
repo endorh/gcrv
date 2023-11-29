@@ -46,6 +46,26 @@ class MenuWindow(scene: EditorScene) : BaseWindow("Menu", scene, false) {
             }
         }
 
+        Button("Transforms") {
+            launcherButtonStyle("Apply transforms")
+            onClick {
+                launchOrBringToTop(multi) { TransformWindow(scene) }
+            }
+        }
+
+        Button("Geo Transforms") {
+            launcherButtonStyle("Apply geometric transforms")
+            onClick {
+                launchOrBringToTop(multi) { GeometryTransformWindow(scene) }
+            }
+        }
+
+        Button("Timeline") {
+            launcherButtonStyle("Keyframe timeline")
+            onClick {
+                launchOrBringToTop(multi) { TimeLineWindow(scene) }
+            }
+        }
 
         Section("Settings") {
             Row(Grow.Std) {

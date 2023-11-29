@@ -4,11 +4,8 @@ import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
-import endorh.unican.gcrv.animation.Easing
-import endorh.unican.gcrv.animation.Easings
-import endorh.unican.gcrv.animation.TimeRange
-import endorh.unican.gcrv.animation.TimeStamp
-import endorh.unican.gcrv.line_algorithms.renderers.OptionPicker
+import endorh.unican.gcrv.animation.*
+import endorh.unican.gcrv.line_algorithms.renderers.OptionIdxPicker
 import endorh.unican.gcrv.ui2.ColorField
 import endorh.unican.gcrv.util.removeTrailingZeros
 import endorh.unican.gcrv.util.roundToString
@@ -233,17 +230,6 @@ fun UiScope.TimeRangeField(
          modifier.width(Grow(0.5F, min = 40.dp)).margin(start = 4.dp)
             .padding(start = 1.dp)
       }
-      block()
-   }
-}
-
-fun UiScope.EasingEditor(
-   value: Easing, onValueChange: (Easing) -> Unit = {}, scopeName: String? = null,
-   tint: Color? = null, padding: Dp = 4.dp, suppressBackground: Boolean = false,
-   block: UiScope.() -> Unit
-) {
-   Row {
-      OptionPicker(Easings, Easings.indexOf(value), { onValueChange(Easings[it]) }, scopeName = scopeName, tint = tint)
       block()
    }
 }

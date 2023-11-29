@@ -3,7 +3,10 @@ package endorh.unican.gcrv.line_algorithms.renderers.point
 import de.fabmax.kool.math.Vec2i
 import endorh.unican.gcrv.line_algorithms.PixelRendererContext
 import endorh.unican.gcrv.line_algorithms.Point2DRenderer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable @SerialName("square")
 object SquarePointRenderer : Point2DRenderer {
    override val name = "Square"
 

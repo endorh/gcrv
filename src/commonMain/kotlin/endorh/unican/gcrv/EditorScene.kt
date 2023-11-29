@@ -3,14 +3,12 @@ package endorh.unican.gcrv
 import de.fabmax.kool.Assets
 import de.fabmax.kool.KoolContext
 import de.fabmax.kool.demo.SimpleScene
-import de.fabmax.kool.demo.SimpleSceneLoader
 import de.fabmax.kool.demo.UiSizes
 import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.modules.ui2.docking.Dock
 import de.fabmax.kool.modules.ui2.docking.UiDockable
-import de.fabmax.kool.pipeline.Texture2d
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.launchDelayed
@@ -22,7 +20,7 @@ import endorh.unican.gcrv.line_algorithms.renderers.line.BresenhamRendererBreadt
 import endorh.unican.gcrv.line_algorithms.renderers.point.CircleAntiAliasPointRenderer
 import endorh.unican.gcrv.ui2.BufferCanvas
 import endorh.unican.gcrv.windows.*
-import endorh.unican.gcrv.objects.AnimProperty
+import endorh.unican.gcrv.objects.property.AnimProperty
 import endorh.unican.gcrv.objects.Object2D
 import endorh.unican.gcrv.objects.Object2DStack
 import kotlinx.coroutines.CoroutineScope
@@ -104,7 +102,7 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
         Color("6797A4FF"),
         Color("69797CFF"),
         Color("2B2B2BFF"),
-        Color("80808042"),
+        Color("64646438"),
         Color("FFFFFFFF"),
         Color("FFFFFFFF"),
         Color("D4DBDDFF"),
@@ -116,7 +114,7 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
 
     private val windowSpawnLocation = MutableVec2f(320F, 64F)
 
-    var exampleImage: Texture2d? = null
+    // var exampleImage: Texture2d? = null
 
     init {
        pipeline.render(canvas)
@@ -124,9 +122,7 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
 
     fun drawObject(obj: Object2D, update: Boolean = true) {
         obj.onPropertyChange { updateCanvas() }
-        obj.properties.allProperties.forEach {
-            it.timeLine.value = timeLine.value
-        }
+        obj.timeLine.value = timeLine.value
         objectStack.objects += obj
         if (update) updateCanvas()
     }
@@ -141,7 +137,7 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
     class CanvasUpdateEvent(val clear: Boolean = true)
 
     override suspend fun Assets.loadResources(ctx: KoolContext) {
-        exampleImage = loadTexture2d("${SimpleSceneLoader.materialPath}/uv_checker_map.jpg")
+        // exampleImage = loadTexture2d("${SimpleSceneLoader.materialPath}/uv_checker_map.jpg")
     }
 
     override fun Scene.setupMainScene(ctx: KoolContext) {
@@ -188,6 +184,7 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
         spawnWindow(RenderSettingsWindow(scene), "0:row/0:col/1:leaf")
         spawnWindow(ToolWindow(scene), "0:row/0:col/0:leaf")
         spawnWindow(TransformWindow(scene), "0:row/0:col/0:leaf")
+        spawnWindow(GeometryTransformWindow(scene), "0:row/0:col/0:leaf")
         spawnWindow(TimeLineWindow(scene), "0:row/1:col/1:leaf")
         spawnWindow(OutlinerWindow(scene), "0:row/2:col/0:leaf")
         spawnWindow(InspectorWindow(scene), "0:row/2:col/1:leaf")

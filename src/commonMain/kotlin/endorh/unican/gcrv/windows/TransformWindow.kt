@@ -47,40 +47,66 @@ class TransformWindow(scene: EditorScene) : BaseWindow("Transform", scene, true)
       Section("Transform") {
          Row(Grow.Std) {
             Text("Local") {
-               modifier.margin(4.dp).width(Grow(0.3F, max = 80.dp)).alignY(AlignmentY.Center)
+               modifier.margin(4.dp).width(Grow(0.4F, max = 80.dp)).alignY(AlignmentY.Center)
             }
-            Button("Apply") {
-               modifier.margin(4.dp).width(Grow(0.35F)).onClick {
+            Button("*") {
+               modifier.margin(4.dp).width(Grow(0.2F)).onClick {
                   val t = transform
                   for (o in scene.selectedObjects)
-                     o.transform.setFrom(t * o.transform.transform)
+                     o.localTransforms.entries.lastOrNull()?.let {
+                        it.setFrom(t * it.transform)
+                     }
                }
             }
-            Button("Revert") {
-               modifier.margin(4.dp).width(Grow(0.35F)).onClick {
+            Button("/") {
+               modifier.margin(4.dp).width(Grow(0.2F)).onClick {
                   val t = transform.inverse()
                   for (o in scene.selectedObjects)
-                     o.transform.setFrom(t * o.transform.transform)
+                     o.localTransforms.entries.lastOrNull()?.let {
+                        it.setFrom(t * it.transform)
+                     }
+               }
+            }
+            Button("+") {
+               modifier.margin(4.dp).width(Grow(0.2F)).onClick {
+                  val t = taggedTransform
+                  for (o in scene.selectedObjects) {
+                     o.localTransforms.insert()
+                     o.localTransforms.entries.last().setFromTaggedTransform(t)
+                  }
                }
             }
          }
 
          Row(Grow.Std) {
             Text("Global") {
-               modifier.margin(4.dp).width(Grow(0.3F, max = 80.dp)).alignY(AlignmentY.Center)
+               modifier.margin(4.dp).width(Grow(0.4F, max = 80.dp)).alignY(AlignmentY.Center)
             }
-            Button("Apply") {
-               modifier.margin(4.dp).width(Grow(0.35F)).onClick {
+            Button("*") {
+               modifier.margin(4.dp).width(Grow(0.2F)).onClick {
                   val t = transform
                   for (o in scene.selectedObjects)
-                     o.globalTransform.setFrom(t * o.globalTransform.transform)
+                     o.globalTransforms.entries.lastOrNull()?.let {
+                        it.setFrom(t * it.transform)
+                     }
                }
             }
-            Button("Revert") {
-               modifier.margin(4.dp).width(Grow(0.35F)).onClick {
+            Button("/") {
+               modifier.margin(4.dp).width(Grow(0.2F)).onClick {
                   val t = transform.inverse()
                   for (o in scene.selectedObjects)
-                     o.globalTransform.setFrom(t * o.globalTransform.transform)
+                     o.globalTransforms.entries.lastOrNull()?.let {
+                        it.setFrom(t * it.transform)
+                     }
+               }
+            }
+            Button("+") {
+               modifier.margin(4.dp).width(Grow(0.2F)).onClick {
+                  val t = taggedTransform
+                  for (o in scene.selectedObjects) {
+                     o.globalTransforms.insert()
+                     o.globalTransforms.entries.last().setFromTaggedTransform(t)
+                  }
                }
             }
          }

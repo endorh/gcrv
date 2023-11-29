@@ -7,15 +7,18 @@ import endorh.unican.gcrv.line_algorithms.renderers.LineRenderers
 import endorh.unican.gcrv.line_algorithms.renderers.OptionalLineRendererPicker
 import endorh.unican.gcrv.line_algorithms.renderers.OptionalPointRendererPicker
 import endorh.unican.gcrv.line_algorithms.renderers.PointRenderers
-import endorh.unican.gcrv.objects.*
+import endorh.unican.gcrv.objects.property.*
 import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.I
 import kotlin.reflect.KProperty
 
-class LineStyleProperty(lineStyle: LineStyle) : CompoundAnimProperty() {
+class LineStyleProperty(lineStyle: LineStyle, start: PointStyle, end: PointStyle) : CompoundAnimProperty() {
    var color by color(lineStyle.color)
    var breadth by float(lineStyle.breadth)
-   var renderer by option(LineRenderers, lineStyle.renderer)
+   var renderer by nullOption(LineRenderers, lineStyle.renderer)
+
+   val start by pointStyle(start)
+   val end by pointStyle(end)
 
    override val showExpanded: Boolean get() = false
    operator fun getValue(thisRef: Any?, property: KProperty<*>) = this
@@ -26,7 +29,7 @@ class LineStyleProperty(lineStyle: LineStyle) : CompoundAnimProperty() {
 class PointStyleProperty(value: PointStyle) : CompoundAnimProperty() {
    var color by color(value.color)
    var size by float(value.size)
-   var renderer by option(PointRenderers, value.renderer)
+   var renderer by nullOption(PointRenderers, value.renderer)
 
    override val showExpanded: Boolean get() = false
    operator fun getValue(thisRef: Any?, property: KProperty<*>) = this

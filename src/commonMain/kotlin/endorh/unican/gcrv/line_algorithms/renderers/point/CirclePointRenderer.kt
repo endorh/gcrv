@@ -5,7 +5,10 @@ import endorh.unican.gcrv.line_algorithms.PixelRendererContext
 import endorh.unican.gcrv.line_algorithms.Point2DRenderer
 import endorh.unican.gcrv.util.component1
 import endorh.unican.gcrv.util.component2
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable @SerialName("circle")
 object CirclePointRenderer : Point2DRenderer {
    override val name = "Circle"
 

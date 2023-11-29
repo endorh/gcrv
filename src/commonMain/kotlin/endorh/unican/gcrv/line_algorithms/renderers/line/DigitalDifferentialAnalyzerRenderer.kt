@@ -5,9 +5,12 @@ import endorh.unican.gcrv.line_algorithms.Line2DRenderer
 import endorh.unican.gcrv.line_algorithms.PixelRendererContext
 import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.I
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlin.math.abs
 import kotlin.math.floor
 
+@Serializable @SerialName("dda")
 object DigitalDifferentialAnalyzerRenderer : Line2DRenderer {
    override val name = "DDA (Digital Differential Analyzer)"
 

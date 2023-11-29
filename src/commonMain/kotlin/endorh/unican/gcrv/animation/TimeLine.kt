@@ -1,108 +1,31 @@
 package endorh.unican.gcrv.animation
 
-import de.fabmax.kool.modules.ui2.MutableState
-import de.fabmax.kool.modules.ui2.UiScope
-import de.fabmax.kool.modules.ui2.UiSurface
 import de.fabmax.kool.modules.ui2.mutableStateOf
-import de.fabmax.kool.util.RenderLoop
 import endorh.unican.gcrv.objects.Object2DStack
+import endorh.unican.gcrv.ui2.MutableSerialStateValue
+import endorh.unican.gcrv.ui2.mutableSerialStateOf
 import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.I
-import kotlinx.coroutines.*
-import kotlin.coroutines.CoroutineContext
+import endorh.unican.gcrv.util.roundToString
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
-import kotlin.math.roundToLong
 
-class PlaybackManager(context: CoroutineContext, val timeLine: TimeLine) : MutableState(), CoroutineScope {
-   override val coroutineContext: CoroutineContext = context + Dispatchers.RenderLoop
-   var isPlaying = false
-      private set(value) {
-         field = value
-         stateChanged()
-      }
-   var isLoop = true
-      private set(value) {
-         field = value
-         stateChanged()
-      }
-   private var playPosition: TimeStamp? = null
-   private var playJob: Job? = null
-
-   var step = TimeStamp(0, 1F / 30F)
-      set(value) {
-         field = value
-         stateChanged()
-      }
-   var fps = 30F
-      set(value) {
-         field = value
-         frameDelay = (1000F / fps).roundToLong()
-         stateChanged()
-      }
-   private var frameDelay = (1000F / fps).roundToLong()
-
-   fun play() {
-      if (isPlaying) return
-      playPosition = timeLine.currentTime.value
-      isPlaying = true
-      playJob = launch {
-         delay(frameDelay)
-         while (isPlaying) {
-            if (isActive) advance(step)
-            delay(frameDelay)
-         }
-      }
-   }
-
-   fun pause() {
-      isPlaying = false
-      playJob?.cancel()
-   }
-
-   fun stop() {
-      isPlaying = false
-      playJob?.cancel()
-      playPosition?.let {
-         timeLine.currentTime.value = it
-         playPosition = null
-      }
-   }
-
-   fun togglePause() {
-      if (isPlaying) pause() else play()
-   }
-
-   fun toggleStop() {
-      if (isPlaying) stop() else play()
-   }
-
-   fun advance(amount: TimeStamp) {
-      timeLine.currentTime.value += amount
-      if (timeLine.currentTime.value > timeLine.renderedRange.end) {
-         if (isLoop) {
-            timeLine.currentTime.value -= (timeLine.renderedRange.end - timeLine.renderedRange.start)
-         } else {
-            timeLine.currentTime.value = timeLine.renderedRange.end
-            isPlaying = false
-         }
-      }
-   }
-
-   fun use(surface: UiSurface) {
-      usedBy(surface)
-   }
-   fun UiScope.use() = use(surface)
-}
-
+@Serializable
 class TimeLine {
    var renderedRange: TimeRange = TimeRange(TimeStamp(0), TimeStamp(10))
-   var currentTime = mutableStateOf(TimeStamp(0))
-
-   var animatedObjects: Object2DStack = Object2DStack()
+   var currentTime: MutableSerialStateValue<TimeStamp> = mutableStateOf(TimeStamp(0))
 }
 
+@Serializable(TimeStamp.Serializer::class)
 data class TimeStamp(val frame: Int, val subFrame: Float = 0F) : Comparable<TimeStamp> {
    operator fun rangeTo(other: TimeStamp) = TimeRange(this, other)
    operator fun rangeUntil(other: TimeStamp) = TimeRange(this, other, true)
@@ -138,8 +61,32 @@ data class TimeStamp(val frame: Int, val subFrame: Float = 0F) : Comparable<Time
    companion object {
       fun fromSeconds(seconds: Float) = TimeStamp(seconds.I, seconds - seconds.I)
    }
+
+   object Serializer : KSerializer<TimeStamp> {
+      override val descriptor: SerialDescriptor
+         get() = PrimitiveSerialDescriptor("TimeStamp", PrimitiveKind.STRING)
+
+      override fun deserialize(decoder: Decoder) = fromString(decoder.decodeString())
+      // TODO: Use a better way to represent frames exactly
+      override fun serialize(encoder: Encoder, value: TimeStamp) {
+         encoder.encodeString(toString(value))
+      }
+
+      fun fromString(serialized: String): TimeStamp {
+         if (':' !in serialized) throw SerializationException("Invalid TimeStamp format: $serialized (missing colon)")
+         try {
+            return serialized.split(":").let {
+               TimeStamp(it[0].toInt(), "0.${it[1]}".toFloat())
+            }
+         } catch (e: NumberFormatException) {
+            throw SerializationException("Invalid TimeStamp format: $serialized", e)
+         }
+      }
+      fun toString(value: TimeStamp) = "${value.frame}:${value.subFrame.roundToString(5)}"
+   }
 }
 
+@Serializable(TimeRange.Serializer::class)
 data class TimeRange(val start: TimeStamp, val end: TimeStamp, val exclusiveEnd: Boolean = false) {
    operator fun contains(timeStamp: TimeStamp) =
       timeStamp >= start && if (exclusiveEnd) timeStamp < end else timeStamp <= end
@@ -165,6 +112,26 @@ data class TimeRange(val start: TimeStamp, val end: TimeStamp, val exclusiveEnd:
             i += 1
          }
       }
+   }
+
+   object Serializer : KSerializer<TimeRange> {
+      override val descriptor = PrimitiveSerialDescriptor("TimeRange", PrimitiveKind.STRING)
+      override fun deserialize(decoder: Decoder) = fromString(decoder.decodeString())
+      override fun serialize(encoder: Encoder, value: TimeRange) {
+         encoder.encodeString(toString(value))
+      }
+
+      fun fromString(serialized: String): TimeRange {
+         if (serialized.startsWith('[')) {
+            val exclusiveEnd = serialized.endsWith(')')
+            if (!exclusiveEnd && !serialized.endsWith(']'))
+               throw SerializationException("Invalid TimeRange format: $serialized (doesn't end with ']' or ')')")
+            if ('-' !in serialized) throw SerializationException("Invalid TimeRange format: $serialized (missing '-')")
+            val (start, end) = serialized.substring(1, serialized.length - 1).split("-")
+            return TimeRange(TimeStamp.Serializer.fromString(start), TimeStamp.Serializer.fromString(end), exclusiveEnd)
+         } else throw SerializationException("Invalid TimeRange format: $serialized (doesn't start with '[')")
+      }
+      fun toString(value: TimeRange) = "[${TimeStamp.Serializer.toString(value.start)}-${TimeStamp.Serializer.toString(value.end)}${if (value.exclusiveEnd) ")" else "]"}"
    }
 }
 

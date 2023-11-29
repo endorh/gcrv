@@ -3,7 +3,10 @@ package endorh.unican.gcrv.line_algorithms.renderers.line
 import endorh.unican.gcrv.line_algorithms.Line2D
 import endorh.unican.gcrv.line_algorithms.Line2DRenderer
 import endorh.unican.gcrv.line_algorithms.PixelRendererContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable @SerialName("orthogonal")
 object OrthogonalLineRenderer : Line2DRenderer {
    override val name = "Orthogonal (only horizontal/vertical lines)"
 

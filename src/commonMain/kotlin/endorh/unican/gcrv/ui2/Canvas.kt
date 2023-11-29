@@ -170,8 +170,8 @@ open class CanvasNode(parent: UiNode?, surface: UiSurface) : UiNode(parent, surf
       return this
    }
 
-   val canvasWidth = mutableStateOf(1)
-   val canvasHeight = mutableStateOf(1)
+   val canvasWidth = mutableSerialStateOf(1)
+   val canvasHeight = mutableSerialStateOf(1)
 
    private var canvasAR = 1F
 

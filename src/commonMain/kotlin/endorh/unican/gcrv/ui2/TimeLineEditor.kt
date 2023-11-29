@@ -11,12 +11,12 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-interface TimeLineScope : UiScope {
+interface TimeLineEditorScope : UiScope {
    val timeLine: TimeLine
-   override val modifier: TimeLineModifier
+   override val modifier: TimeLineEditorModifier
 }
 
-open class TimeLineModifier(surface: UiSurface) : UiModifier(surface) {
+open class TimeLineEditorModifier(surface: UiSurface) : UiModifier(surface) {
    var cursorColor: Color by property(Color.LIGHT_GRAY)
    var gridColor: Color by property(Color.DARK_GRAY)
    var subGridColor: Color by property(Color.DARK_GRAY.withAlpha(0.5F))
@@ -31,23 +31,23 @@ open class TimeLineModifier(surface: UiSurface) : UiModifier(surface) {
    var keyFrameDrawable: KeyFrameRenderer = SimpleKeyFrameRenderer(Color.YELLOW)
 }
 
-fun <T: TimeLineModifier> T.cursorColor(color: Color) = apply { cursorColor = color }
-fun <T: TimeLineModifier> T.gridColor(color: Color) = apply { gridColor = color }
-fun <T: TimeLineModifier> T.trackColor(color: Color) = apply { trackColor = color }
-fun <T: TimeLineModifier> T.outOfRangeOverlay(color: Color) = apply { outOfRangeOverlay = color }
-fun <T: TimeLineModifier> T.boundsColor(color: Color) = apply { boundsColor = color }
+fun <T: TimeLineEditorModifier> T.cursorColor(color: Color) = apply { cursorColor = color }
+fun <T: TimeLineEditorModifier> T.gridColor(color: Color) = apply { gridColor = color }
+fun <T: TimeLineEditorModifier> T.trackColor(color: Color) = apply { trackColor = color }
+fun <T: TimeLineEditorModifier> T.outOfRangeOverlay(color: Color) = apply { outOfRangeOverlay = color }
+fun <T: TimeLineEditorModifier> T.boundsColor(color: Color) = apply { boundsColor = color }
 
-fun <T: TimeLineModifier> T.keyFrames(keyFrames: List<KeyFrame<*>>) = apply { this.keyFrames = keyFrames }
-fun <T: TimeLineModifier> T.keyFrameDrawable(keyFrameDrawable: KeyFrameRenderer) = apply { this.keyFrameDrawable = keyFrameDrawable }
-fun <T: TimeLineModifier> T.fpsGrid(fpsGrid: Int?) = apply { this.fpsGrid = fpsGrid }
-fun <T: TimeLineModifier> T.snapToGrid(snapToGrid: Boolean) = apply { this.snapToGrid = snapToGrid }
+fun <T: TimeLineEditorModifier> T.keyFrames(keyFrames: List<KeyFrame<*>>) = apply { this.keyFrames = keyFrames }
+fun <T: TimeLineEditorModifier> T.keyFrameDrawable(keyFrameDrawable: KeyFrameRenderer) = apply { this.keyFrameDrawable = keyFrameDrawable }
+fun <T: TimeLineEditorModifier> T.fpsGrid(fpsGrid: Int?) = apply { this.fpsGrid = fpsGrid }
+fun <T: TimeLineEditorModifier> T.snapToGrid(snapToGrid: Boolean) = apply { this.snapToGrid = snapToGrid }
 
 interface KeyFrameRenderer {
-   fun render(node: TimeLineNode, keyFrame: KeyFrame<*>, x: Float, y: Float)
+   fun render(node: TimeLineEditorNode, keyFrame: KeyFrame<*>, x: Float, y: Float)
 }
 
 class SimpleKeyFrameRenderer(val color: Color) : KeyFrameRenderer {
-   override fun render(node: TimeLineNode, keyFrame: KeyFrame<*>, x: Float, y: Float) {
+   override fun render(node: TimeLineEditorNode, keyFrame: KeyFrame<*>, x: Float, y: Float) {
       with(node) {
          node.getUiPrimitives().apply {
             localOval(x, y, 4F, 8F, color)
@@ -57,16 +57,16 @@ class SimpleKeyFrameRenderer(val color: Color) : KeyFrameRenderer {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun UiScope.KeyFrameTimeLine(
+inline fun UiScope.TimeLineEditor(
    timeLine: TimeLine,
    scopeName: String? = null,
-   block: TimeLineScope.() -> Unit = {}
-): TimeLineScope {
+   block: TimeLineEditorScope.() -> Unit = {}
+): TimeLineEditorScope {
    contract {
       callsInPlace(block, InvocationKind.EXACTLY_ONCE)
    }
 
-   return uiNode.createChild(scopeName, TimeLineNode::class, TimeLineNode.factory).apply {
+   return uiNode.createChild(scopeName, TimeLineEditorNode::class, TimeLineEditorNode.factory).apply {
       init(timeLine)
       modifier.width(Grow.Std)
          .onClick(this)
@@ -76,10 +76,10 @@ inline fun UiScope.KeyFrameTimeLine(
    }
 }
 
-class TimeLineNode(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface),
-   TimeLineScope, Clickable, Hoverable, Draggable {
+class TimeLineEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface),
+   TimeLineEditorScope, Clickable, Hoverable, Draggable {
    override lateinit var timeLine: TimeLine
-   override val modifier = TimeLineModifier(surface)
+   override val modifier = TimeLineEditorModifier(surface)
 
    fun init(timeLine: TimeLine) {
       if (!::timeLine.isInitialized) {
@@ -88,9 +88,9 @@ class TimeLineNode(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface
       }
    }
 
-   val displayedRange = mutableStateOf(TimeRange(TimeStamp(0), TimeStamp(10)))
+   val displayedRange = mutableSerialStateOf(TimeRange(TimeStamp(0), TimeStamp(10)))
 
-   val draggedKeyFrame = mutableStateOf<TimeStamp?>(null)
+   val draggedKeyFrame = mutableSerialStateOf<TimeStamp?>(null)
 
    override fun measureContentSize(ctx: KoolContext) {
       setContentSize(200F, 100F)
@@ -176,6 +176,6 @@ class TimeLineNode(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface
    }
 
    companion object {
-      val factory: (UiNode, UiSurface) -> TimeLineNode = { parent, surface -> TimeLineNode(parent, surface) }
+      val factory: (UiNode, UiSurface) -> TimeLineEditorNode = { parent, surface -> TimeLineEditorNode(parent, surface) }
    }
 }

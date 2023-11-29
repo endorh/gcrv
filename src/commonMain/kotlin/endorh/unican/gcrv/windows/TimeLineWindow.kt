@@ -3,13 +3,11 @@ package endorh.unican.gcrv.windows
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
 import endorh.unican.gcrv.animation.KeyFrameList
-import endorh.unican.gcrv.line_algorithms.ui.EasingEditor
+import endorh.unican.gcrv.animation.EasingCurvePopupEditor
 import endorh.unican.gcrv.line_algorithms.ui.IntField
 import endorh.unican.gcrv.line_algorithms.ui.TimeRangeField
-import endorh.unican.gcrv.ui2.KeyFrameTimeLine
-import endorh.unican.gcrv.ui2.fpsGrid
-import endorh.unican.gcrv.ui2.keyFrames
-import endorh.unican.gcrv.ui2.snapToGrid
+import endorh.unican.gcrv.objects.property.AnimProperty
+import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.I
 import endorh.unican.gcrv.util.pad
 import endorh.unican.gcrv.util.padLength
@@ -23,14 +21,15 @@ class TimeLineWindow(scene: EditorScene) : BaseWindow("Timeline", scene, true) {
    private val timeLine get() = scene.timeLine.value
    private val playback get() = scene.playbackManager.value
    private val selectedProperties get() = scene.selectedProperties
+   private val focusedProperty = mutableSerialStateOf<AnimProperty<*>?>(null)
    private var currentTimeStamp
       get() = timeLine.currentTime.value
       set(value) {
          timeLine.currentTime.value = value
       }
 
-   private val fps = mutableStateOf(30)
-   private val snapToGrid = mutableStateOf(true)
+   private val fps = mutableSerialStateOf(30)
+   private val snapToGrid = mutableSerialStateOf(true)
 
    override fun UiScope.windowContent() = Column {
       modifier.size(Grow.Std, Grow.Std)
@@ -38,7 +37,7 @@ class TimeLineWindow(scene: EditorScene) : BaseWindow("Timeline", scene, true) {
          Row {
             Button("+") {
                modifier.margin(4.dp).onClick {
-                  for (p in selectedProperties.value) {
+                  focusedProperty.value?.let { p ->
                      p.insertKeyFrame(currentTimeStamp)
                   }
                }
@@ -46,15 +45,16 @@ class TimeLineWindow(scene: EditorScene) : BaseWindow("Timeline", scene, true) {
 
             Button("-") {
                modifier.margin(4.dp).onClick {
-                  for (p in selectedProperties.value)
+                  focusedProperty.value?.let { p ->
                      p.keyFrames.remove(currentTimeStamp)
+                  }
                }
             }
 
             Button("<") {
                modifier.margin(4.dp).onClick {
-                  selectedProperties.value.firstOrNull()?.let {
-                     it.keyFrames.keyFrames.lowerKey(currentTimeStamp)?.let {
+                  focusedProperty.value?.let { p ->
+                     p.keyFrames.lowerKeyFrame(currentTimeStamp)?.time?.let {
                         currentTimeStamp = it
                      }
                   }
@@ -63,20 +63,20 @@ class TimeLineWindow(scene: EditorScene) : BaseWindow("Timeline", scene, true) {
 
             Button(">") {
                modifier.margin(4.dp).onClick {
-                  selectedProperties.value.firstOrNull()?.let {
-                     it.keyFrames.keyFrames.higherKey(currentTimeStamp)?.let {
+                  focusedProperty.value?.let { p ->
+                     p.keyFrames.higherKeyFrame(currentTimeStamp)?.time?.let {
                         currentTimeStamp = it
                      }
                   }
                }
             }
 
-            selectedProperties.use().firstOrNull()?.let { p ->
+            focusedProperty.use()?.let { p ->
                @Suppress("UNCHECKED_CAST")
                val keyFrames = p.keyFrames as KeyFrameList<Any>
-               keyFrames.keyFrames.floorValue(timeLine.currentTime.value)?.let { kf ->
-                  EasingEditor(kf.easing, { keyFrames.set(kf.copy(easing = it)) }, "easing") {
-                     modifier.margin(4.dp)
+               keyFrames.ceilingKeyFrame(timeLine.currentTime.value)?.let { kf ->
+                  EasingCurvePopupEditor(kf.easing, { keyFrames.set(kf.copy(easing = it)) }) {
+                     modifier.margin(4.dp).width(Grow(1F, max=120.dp))
                   }
                }
             }
@@ -121,13 +121,26 @@ class TimeLineWindow(scene: EditorScene) : BaseWindow("Timeline", scene, true) {
          }
       }
 
-      KeyFrameTimeLine(timeLine, "timeLine") {
-         modifier.margin(4.dp)
-            .fpsGrid(fps.use())
-            .snapToGrid(snapToGrid.use())
-         selectedProperties.use().firstOrNull()?.let {
-            modifier.keyFrames(it.keyFrames.allKeyFrames.toList())
-         } ?: modifier.keyFrames(emptyList())
-      }
+      // TimeLineEditor(timeLine, "timeLine") {
+      //    modifier.margin(4.dp)
+      //       .fpsGrid(fps.use())
+      //       .snapToGrid(snapToGrid.use())
+      //    selectedProperties.use().firstOrNull()?.let {
+      //       modifier.keyFrames(it.keyFrames.allKeyFrames.toList())
+      //    } ?: modifier.keyFrames(emptyList())
+      // }
+
+      // ScrollArea(withHorizontalScrollbar = false) {
+      //    modifier.background(RectBackground(colors.background)).width(Grow.Std).height(Grow.Std)
+         TimeLineMultiEditor(timeLine, focusedProperty, "timeLine") {
+            modifier.margin(4.dp)
+               .background(RectBackground(colors.background))
+               .width(Grow.Std)
+               .height(Grow.Std)
+               .fpsGrid(fps.use())
+               .snapToGrid(snapToGrid.use())
+            modifier.objects(scene.selectedObjects.use())
+         }
+      // }
    }
 }

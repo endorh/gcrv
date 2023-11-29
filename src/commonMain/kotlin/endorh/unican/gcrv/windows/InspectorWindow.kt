@@ -1,14 +1,14 @@
 package endorh.unican.gcrv.windows
 
 import de.fabmax.kool.modules.ui2.*
-import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.EditorScene
 import endorh.unican.gcrv.line_algorithms.ui.LeftBorder
-import endorh.unican.gcrv.objects.AnimProperty
-import endorh.unican.gcrv.objects.CompoundAnimProperty
-import endorh.unican.gcrv.objects.PropertyNode
-import endorh.unican.gcrv.transformations.TransformProperty
-import endorh.unican.gcrv.ui2.Section
+import endorh.unican.gcrv.objects.property.AnimProperty
+import endorh.unican.gcrv.objects.property.CompoundAnimProperty
+import endorh.unican.gcrv.objects.property.PropertyList
+import endorh.unican.gcrv.objects.property.PropertyNode
+import endorh.unican.gcrv.ui2.Group
+import endorh.unican.gcrv.ui2.SmallButton
 import endorh.unican.gcrv.util.toTitleCase
 
 class InspectorWindow(scene: EditorScene) : BaseWindow("Inspector", scene, true) {
@@ -23,7 +23,7 @@ class InspectorWindow(scene: EditorScene) : BaseWindow("Inspector", scene, true)
             val properties = scene.selectedObjects.use()
                 .flatMap { it.properties.values }
                 .groupBy { it.name }
-                .values.sortedBy { it.first() is CompoundAnimProperty }
+                .values.sortedByDescending { it.first().priority }
             // println("Selected object: ${scene.selectedObjects.firstOrNull()?.name}")
             // println("Properties: $properties")
             // println("All properties: ${scene.selectedObjects.use().flatMap { it.properties.allProperties }}")
@@ -36,6 +36,7 @@ class InspectorWindow(scene: EditorScene) : BaseWindow("Inspector", scene, true)
         when (val first = nodeSet.first()) {
             is AnimProperty<*> -> propertyEditor(nodeSet.filterIsInstance<AnimProperty<*>>().filter { it::class == first::class })
             is CompoundAnimProperty -> compoundPropertyEditor(nodeSet.filterIsInstance<CompoundAnimProperty>().filter { it::class == first::class })
+            is PropertyList<*> -> propertyListEditor(nodeSet.filterIsInstance<PropertyList<*>>().filter { it::class == first::class })
         }
     }
     private fun ColumnScope.propertyEditor(propSet: List<AnimProperty<*>>) {
@@ -44,27 +45,42 @@ class InspectorWindow(scene: EditorScene) : BaseWindow("Inspector", scene, true)
         val first = propSet.first()
         if (first.isUnique && propSet.size > 1) return
         Row(Grow.Std) {
-            modifier.margin(2.dp).padding(4.dp)
-            if (scene.selectedProperties.use().firstOrNull() == first)
-                modifier.border(RoundRectBorder(Color("FF42FF80"), 4.dp, 2.dp))
+            modifier.margin(horizontal=2.dp, vertical=1.dp).padding(horizontal=4.dp)
             with(first) {
-                editor(propSet, onFocus = {
-                    scene.selectedProperties.value = if (scene.selectedProperties.value.firstOrNull() == first)
-                        emptyList() else propSet
-                })
+                editor(propSet)
             }
         }
     }
     private fun ColumnScope.compoundPropertyEditor(propSet: List<CompoundAnimProperty>) {
         val first = propSet.first()
         val subProps = first.properties.values
-            .sortedBy { it is CompoundAnimProperty }
+            .sortedByDescending { it.priority }
             .map { p -> propSet.mapNotNull { it.properties[p.name] } }
-        if (subProps.isNotEmpty()) Section(first.name.toTitleCase(), first.showExpanded) {
+        if (subProps.isNotEmpty()) Group(first.name.toTitleCase(), first.showExpanded) {
             Column(Grow.Std) {
-                this.modifier.padding(start=8.dp).border(LeftBorder(colors.secondaryVariant, 2.dp, 4.dp))
+                this.modifier.padding(start=8.dp).border(LeftBorder(colors.secondaryVariant, 2.dp))
                 for (prop in subProps)
                     propertyNodeEditor(prop)
+            }
+        }
+    }
+    private fun ColumnScope.propertyListEditor(propSet: List<PropertyList<*>>) {
+        val first = propSet.first()
+        val lists = propSet.filter { it.size == first.size }
+        Group(first.name.toTitleCase(), first.showExpanded, titleContent = {
+            SmallButton("+", { margin(end=0.dp) }) {
+                for (list in lists)
+                    list.insert()
+            }
+            SmallButton("-", { margin(start=0.dp) }) {
+                for (list in lists)
+                    list.remove()
+            }
+        }) {
+            Column(Grow.Std) {
+                modifier.padding(start = 8.dp).border(LeftBorder(colors.secondaryVariant, 2.dp))
+                for (i in 0..<first.size)
+                    propertyNodeEditor(lists.map { it[i] })
             }
         }
     }

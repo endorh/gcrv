@@ -74,11 +74,11 @@ fun UiScope.ColorField(
 ) {
    Row(Grow.Std, scopeName=scopeName) {
       val hsv = value.toHsv()
-      val hue = remember { mutableStateOf(hsv.h) }
-      val sat = remember { mutableStateOf(hsv.s) }
-      val `val` = remember { mutableStateOf(hsv.v) }
-      val alpha = remember { mutableStateOf(value.a) }
-      val hexString = remember { mutableStateOf(value.toHexString(allowAlpha).uppercase()) }
+      val hue = remember { mutableSerialStateOf(hsv.h) }
+      val sat = remember { mutableSerialStateOf(hsv.s) }
+      val `val` = remember { mutableSerialStateOf(hsv.v) }
+      val alpha = remember { mutableSerialStateOf(value.a) }
+      val hexString = remember { mutableSerialStateOf(value.toHexString(allowAlpha).uppercase()) }
       ColorChooser(
          hue, sat, `val`, if (allowAlpha) alpha else null, hexString, textFieldTint, width, height,
          "chooser", onChange

@@ -20,23 +20,24 @@ import kotlinx.coroutines.withContext
 class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
     var lastPoint: Vec2i? = null
 
-    val canvasSize: MutableStateValue<Vec2i> = mutableStateOf(Vec2i(10, 10)).onChange {
+    val canvasSize: MutableStateValue<Vec2i> = mutableSerialStateOf(Vec2i(10, 10)).onChange {
         resize(it.x, it.y, origin.value.x, origin.value.y)
     }
-    val origin: MutableStateValue<Vec2i> = mutableStateOf(Vec2i(0, 0)).onChange {
+    val origin: MutableStateValue<Vec2i> = mutableSerialStateOf(Vec2i(0, 0)).onChange {
         resize(canvasSize.value.x, canvasSize.value.y, it.x, it.y)
     }
-    var canvasState = mutableStateOf(makeCanvas(canvasSize.value.x, canvasSize.value.y, origin.value.x, origin.value.y))
+    var canvasState = mutableSerialStateOf(makeCanvas(canvasSize.value.x, canvasSize.value.y, origin.value.x, origin.value.y))
     val canvas get() = canvasState.value
+    lateinit var canvasScope: CanvasScope
 
     val pipeline get() = scene.pipeline
 
     var lastDragStart: Vec2i? = null
     var lastDragOrigin: Vec2i = origin.value
 
-    val popupCanvasCenter = mutableStateOf(Vec2f(0F, 0F))
+    val popupCanvasCenter = mutableSerialStateOf(Vec2f(0F, 0F))
     val popupCanvasSize = Vec2i(350, 200)
-    val popupZoomScale = mutableStateOf(10)
+    val popupZoomScale = mutableSerialStateOf(10)
     val popupCanvas = BufferCanvas(popupCanvasSize.x, popupCanvasSize.y)
     val popup: AutoPopup = AutoPopup(hideOnEsc = false, hideOnOutsideClick = false, scopeName = "Zoom")
     init {
@@ -50,6 +51,8 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
                 Canvas(popupCanvas) {
                     modifier
                         .canvasSize(CanvasSize.FixedScale(1F))
+                        .invertY(true)
+                        .uvRect(UvRect.FULL)
                         .size(Dp.fromPx(popupCanvasSize.x.F), Dp.fromPx(popupCanvasSize.y.F))
                         .backgroundColor(Color.TRANSPARENT)
                         .onHover {
@@ -58,7 +61,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
                                 val pos = Vec2f(
                                     sPos.x - lastCanvasScope.uiNode.leftPx,
                                     sPos.y - lastCanvasScope.uiNode.topPx)
-                                popupCanvasCenter.value = with (canvas) {
+                                popupCanvasCenter.value = with(canvasScope) {
                                     pos.toCanvasCoordinates()
                                 }
                                 val popupPos = it.screenPosition.subtract(
@@ -114,7 +117,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
 
             val size = checkSize(uiNode)
 
-            Canvas(canvasState.use(), "Canvas") {
+            canvasScope = Canvas(canvasState.use(), "Canvas") {
                 lastCanvasScope = this
                 modifier
                     .invertY(true)

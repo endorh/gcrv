@@ -1,183 +1,47 @@
-package endorh.unican.gcrv.objects
+package endorh.unican.gcrv.objects.property
 
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.math.Vec2i
-import de.fabmax.kool.modules.ui2.*
+import de.fabmax.kool.modules.ui2.Checkbox
+import de.fabmax.kool.modules.ui2.UiScope
+import de.fabmax.kool.modules.ui2.onToggle
 import de.fabmax.kool.util.Color
-import endorh.unican.gcrv.animation.KeyFrame
-import endorh.unican.gcrv.animation.KeyFrameList
-import endorh.unican.gcrv.animation.TimeLine
-import endorh.unican.gcrv.animation.TimeStamp
-import endorh.unican.gcrv.line_algorithms.renderers.OptionPicker
-import endorh.unican.gcrv.line_algorithms.renderers.OptionalOptionPicker
+import endorh.unican.gcrv.line_algorithms.renderers.OptionIdxPicker
+import endorh.unican.gcrv.line_algorithms.renderers.OptionalOptionIdxPicker
 import endorh.unican.gcrv.line_algorithms.ui.*
+import endorh.unican.gcrv.transformations.TransformProperty
+import endorh.unican.gcrv.types.ColorSerializer
+import endorh.unican.gcrv.types.Vec2fSerializer
+import endorh.unican.gcrv.types.Vec2iSerializer
 import endorh.unican.gcrv.ui2.ColorField
 import endorh.unican.gcrv.util.D
 import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.I
-import endorh.unican.gcrv.util.toTitleCase
-import kotlin.js.JsName
-import kotlin.jvm.JvmInline
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
 import kotlin.random.Random
-import kotlin.reflect.KProperty
 
-@JsName("createPropertyMap")
-fun PropertyMap(): PropertyMap = PropertyMapImpl()
+typealias bool = BoolProperty
+typealias string = StringProperty
+typealias int = IntProperty
+typealias float = FloatProperty
+typealias double = DoubleProperty
+typealias vec2i = Vec2iProperty
+typealias vec2f = Vec2fProperty
+typealias color = ColorProperty
+typealias lineStyle = LineStyleProperty
+typealias pointStyle = PointStyleProperty
+typealias transform = TransformProperty
+typealias option<T> = OptionProperty<T>
+typealias nullOption<T> = NullableOptionProperty<T>
 
-internal val PropertyNode.allProperties: Sequence<AnimProperty<*>> get() = when (this) {
-   is AnimProperty<*> -> sequenceOf(this)
-   is CompoundAnimProperty -> properties.allProperties
-}
+fun <T: PropertyNode> list(vararg elems: T, factory: () -> T) =
+   PropertyList(factory, elems.toList())
+fun <T : PropertyNode> list(showExpanded: Boolean, vararg elems: T, factory: () -> T) =
+   PropertyList(factory, elems.toList(), showExpanded)
 
-sealed interface PropertyMap : Map<String, PropertyNode> {
-   val allProperties: Sequence<AnimProperty<*>> get() =
-      values.asSequence().flatMap { it.allProperties }
-}
 
-@JvmInline value class PropertyMapImpl(
-   val map: MutableMap<String, PropertyNode> = mutableMapOf()
-) : PropertyMap, Map<String, PropertyNode> by map
-
-internal fun PropertyMap.register(property: AnimProperty<*>) {
-   this as PropertyMapImpl
-   if (property.name in map) throw IllegalStateException("Property ${property.name} already registered")
-   map[property.name] = property
-}
-internal fun PropertyMap.register(holder: CompoundAnimProperty) {
-   this as PropertyMapImpl
-   if (holder.name in map) throw IllegalStateException("Property ${holder.name} already registered")
-   map[holder.name] = holder
-}
-
-sealed interface PropertyNode {
-   val name: String
-}
-
-abstract class CompoundAnimProperty : PropertyNode {
-   override lateinit var name: String
-   val properties: PropertyMap = PropertyMap()
-
-   open val showExpanded get() = true
-
-   fun <T> AnimProperty<T>.provideDelegate(thisRef: Any?, property: KProperty<*>): AnimProperty<T> {
-      name = property.name
-      properties.register(this)
-      return this
-   }
-   fun <T> CompoundAnimProperty.provideDelegate(thisRef: Any?, property: KProperty<*>): CompoundAnimProperty {
-      name = property.name
-      properties.register(this)
-      return this
-   }
-}
-
-abstract class AnimProperty<T>(defValue: T) : MutableState(), PropertyNode {
-   override lateinit var name: String
-
-   var isUnique = false
-      private set
-   /**
-    * Mark as unique.
-    * Unique properties won't be editable when multiple objects are selected
-    */
-   fun unique() = apply { isUnique = true }
-
-   private val stateListeners = mutableListOf<(T) -> Unit>()
-   val keyFrames = KeyFrameList<T>()
-   val timeLine = mutableStateOf<TimeLine?>(null).onChange {
-      it?.currentTime?.onChange { notifyListeners(valueForTime(it)) }
-   }
-
-   private var plainValue = defValue
-   var value: T
-      get() = timeLine.value?.let { timeLine ->
-         valueForTime(timeLine.currentTime.value)
-      } ?: plainValue
-      set(value) {
-         timeLine.value?.takeIf { keyFrames.isNotEmpty() } ?.let { timeLine ->
-            keyFrames.set(KeyFrame(timeLine.currentTime.value, value, defaultInterpolator))
-         } ?: run { plainValue = value }
-         notifyListeners(value)
-      }
-
-   open val availableInterpolators: List<PropertyInterpolator<T>> = emptyList()
-
-   fun valueForTime(time: TimeStamp) = keyFrames.valueForTime(time) ?: plainValue
-   fun insertKeyFrame(time: TimeStamp) {
-      keyFrames.set(KeyFrame(time, valueForTime(time), defaultInterpolator))
-   }
-
-   val defaultInterpolator get() = availableInterpolators.firstOrNull() ?: PropertyInterpolator.None()
-
-   private fun notifyListeners(newState: T) {
-      stateChanged()
-      for (listener in stateListeners) listener(newState)
-   }
-
-   fun use(surface: UiSurface): T = value.also {
-      usedBy(surface)
-   }
-   fun onChange(block: (T) -> Unit) = apply {
-      stateListeners += block
-   }
-
-   operator fun UiScope.getValue(thisRef: Any?, property: KProperty<*>) = use(surface)
-   operator fun getValue(thisRef: Any?, property: KProperty<*>) = value
-   operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
-      this.value = value
-   }
-
-   override fun toString() = "AnimProperty($value)"
-
-   open val animatedEditorTint = Color("FF42FF80")
-   open val editorTint: Color? get() = if (keyFrames.keyFrames.isNotEmpty()) animatedEditorTint else null
-   abstract fun UiEditorScope<T>.editor(value: T, modifier: UiScope.() -> Unit = {})
-   open fun UiScope.editor(
-      selected: Collection<AnimProperty<T>> = emptyList(),
-      onFocus: () -> Unit = {},
-      modifier: UiModifier.() -> UiModifier = { this }
-   ) {
-      use(surface)
-      LabeledField(name.toTitleCase(), modifier) {
-         this.modifier.onClick {
-            onFocus()
-         }
-         UiEditorScope.Impl(this@AnimProperty, selected, this).editor(value, it)
-      }
-   }
-}
-
-interface UiEditorScope<T> : UiScope {
-   fun commitEdit(value: T)
-
-   class Impl<T>(
-      private val property: AnimProperty<T>,
-      private val properties: Collection<AnimProperty<T>>,
-      private val scope: UiScope
-   ) : UiEditorScope<T>, UiScope by scope {
-      override fun commitEdit(value: T) {
-         property.value = value
-         for (it in properties)
-            if (it::class == property::class)
-               it.value = value
-      }
-   }
-}
-
-interface PropertyInterpolator<T> {
-   fun interpolate(a: T, b: T, t: Float): T
-
-   companion object {
-      @Suppress("UNCHECKED_CAST")
-      fun <T> None() = None as PropertyInterpolator<T>
-   }
-
-   object None : PropertyInterpolator<Any?> {
-      override fun interpolate(a: Any?, b: Any?, t: Float): Any? =
-         if (t < 1F) a else b
-   }
-}
-
+@Serializable(BoolProperty.Serializer::class)
 class BoolProperty(value: Boolean) : AnimProperty<Boolean>(value) {
    override fun UiEditorScope<Boolean>.editor(value: Boolean, modifier: UiScope.() -> Unit) {
       Checkbox(value) {
@@ -187,8 +51,10 @@ class BoolProperty(value: Boolean) : AnimProperty<Boolean>(value) {
          modifier()
       }
    }
+   object Serializer : AnimProperty.Serializer<Boolean, BoolProperty>(::BoolProperty, Boolean.serializer())
 }
 
+@Serializable(StringProperty.Serializer::class)
 class StringProperty(value: String) : AnimProperty<String>(value) {
    override val availableInterpolators: List<PropertyInterpolator<String>> =
       listOf(StringMixInterpolator)
@@ -222,8 +88,11 @@ class StringProperty(value: String) : AnimProperty<String>(value) {
 
       companion object : StringMixInterpolator(Random(0))
    }
+
+   object Serializer : AnimProperty.Serializer<String, StringProperty>(::StringProperty, String.serializer())
 }
 
+@Serializable(IntProperty.Serializer::class)
 class IntProperty(value: Int) : AnimProperty<Int>(value) {
    override val availableInterpolators: List<PropertyInterpolator<Int>> =
       listOf(LinearInterpolator)
@@ -236,8 +105,11 @@ class IntProperty(value: Int) : AnimProperty<Int>(value) {
       override fun interpolate(a: Int, b: Int, t: Float): Int =
          (a + (b - a) * t).I
    }
+
+   object Serializer : AnimProperty.Serializer<Int, IntProperty>(::IntProperty, Int.serializer())
 }
 
+@Serializable(FloatProperty.Serializer::class)
 class FloatProperty(value: Float) : AnimProperty<Float>(value) {
    override val availableInterpolators: List<PropertyInterpolator<Float>> =
       listOf(LinearInterpolator)
@@ -249,8 +121,11 @@ class FloatProperty(value: Float) : AnimProperty<Float>(value) {
       override fun interpolate(a: Float, b: Float, t: Float): Float =
          a + (b - a) * t
    }
+
+   object Serializer : AnimProperty.Serializer<Float, FloatProperty>(::FloatProperty, Float.serializer())
 }
 
+@Serializable(DoubleProperty.Serializer::class)
 class DoubleProperty(value: Double) : AnimProperty<Double>(value) {
    override val availableInterpolators: List<PropertyInterpolator<Double>> =
       listOf(LinearInterpolator)
@@ -262,8 +137,11 @@ class DoubleProperty(value: Double) : AnimProperty<Double>(value) {
       override fun interpolate(a: Double, b: Double, t: Float): Double =
          a + (b - a) * t
    }
+
+   object Serializer : AnimProperty.Serializer<Double, DoubleProperty>(::DoubleProperty, Double.serializer())
 }
 
+@Serializable(Vec2iProperty.Serializer::class)
 class Vec2iProperty(value: Vec2i) : AnimProperty<Vec2i>(value) {
    override val availableInterpolators: List<PropertyInterpolator<Vec2i>> =
       listOf(LinearInterpolator)
@@ -275,8 +153,11 @@ class Vec2iProperty(value: Vec2i) : AnimProperty<Vec2i>(value) {
       override fun interpolate(a: Vec2i, b: Vec2i, t: Float): Vec2i =
          Vec2i((a.x + (b.x - a.x) * t).I, (a.y + (b.y - a.y) * t).I)
    }
+
+   object Serializer : AnimProperty.Serializer<Vec2i, Vec2iProperty>(::Vec2iProperty, Vec2iSerializer)
 }
 
+@Serializable(Vec2fProperty.Serializer::class)
 class Vec2fProperty(value: Vec2f) : AnimProperty<Vec2f>(value) {
    override val availableInterpolators: List<PropertyInterpolator<Vec2f>> =
       listOf(LinearInterpolator)
@@ -288,8 +169,11 @@ class Vec2fProperty(value: Vec2f) : AnimProperty<Vec2f>(value) {
       override fun interpolate(a: Vec2f, b: Vec2f, t: Float): Vec2f =
          Vec2f(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
    }
+
+   object Serializer : AnimProperty.Serializer<Vec2f, Vec2fProperty>(::Vec2fProperty, Vec2fSerializer)
 }
 
+@Serializable(ColorProperty.Serializer::class)
 class ColorProperty(value: Color) : AnimProperty<Color>(value) {
    override val availableInterpolators: List<PropertyInterpolator<Color>> =
       listOf(HsvInterpolator, LinearInterpolator)
@@ -303,7 +187,8 @@ class ColorProperty(value: Color) : AnimProperty<Color>(value) {
          a.r + (b.r - a.r) * t,
          a.g + (b.g - a.g) * t,
          a.b + (b.b - a.b) * t,
-         a.a + (b.a - a.a) * t)
+         a.a + (b.a - a.a) * t
+      )
    }
 
    object HsvInterpolator : PropertyInterpolator<Color> {
@@ -320,6 +205,8 @@ class ColorProperty(value: Color) : AnimProperty<Color>(value) {
          ).toSrgb(a = a.a + (b.a - a.a) * t)
       }
    }
+
+   object Serializer : AnimProperty.Serializer<Color, ColorProperty>(::ColorProperty, ColorSerializer)
 }
 
 class OptionProperty<T: Any>(val values: List<T>, value: T) : AnimProperty<T>(value) {
@@ -328,7 +215,7 @@ class OptionProperty<T: Any>(val values: List<T>, value: T) : AnimProperty<T>(va
    }
 
    override fun UiEditorScope<T>.editor(value: T, modifier: UiScope.() -> Unit) {
-      OptionPicker(values, values.indexOf(value), { commitEdit(values[it]) }, modifier, "edit/$name/option")
+      OptionIdxPicker(values, values.indexOf(value), { commitEdit(values[it]) }, "edit/$name/option", modifier = modifier)
    }
 }
 
@@ -336,10 +223,9 @@ class NullableOptionProperty<T>(
    val values: List<T & Any>,
    value: T?
 ) : AnimProperty<T?>(value) {
-
    override fun UiEditorScope<T?>.editor(value: T?, modifier: UiScope.() -> Unit) {
-      OptionalOptionPicker(values, values.indexOf(value), {
+      OptionalOptionIdxPicker(values, values.indexOf(value), {
          commitEdit(if (it != null) values[it] else null)
-      }, modifier, "edit/$name/option?")
+      }, "edit/$name/option?", modifier = modifier)
    }
 }

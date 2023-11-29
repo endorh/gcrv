@@ -1,16 +1,23 @@
 package endorh.unican.gcrv.animation
 
-import de.fabmax.kool.util.TreeMap
-import endorh.unican.gcrv.objects.PropertyInterpolator
+import de.fabmax.kool.modules.ui2.MutableState
+import de.fabmax.kool.modules.ui2.UiSurface
+import endorh.unican.gcrv.objects.property.PropertyInterpolator
+import endorh.unican.gcrv.types.TreeMap
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class KeyFrame<T>(
    var time: TimeStamp, var value: T,
+   @Contextual
    var interpolator: PropertyInterpolator<T> = PropertyInterpolator.None(),
    var easing: Easing = Easing.Linear
 )
 
-class KeyFrameList<T> {
-   val keyFrames: TreeMap<TimeStamp, KeyFrame<T>> = TreeMap()
+@Serializable
+class KeyFrameList<T> : MutableState() {
+   private val keyFrames: TreeMap<TimeStamp, KeyFrame<T>> = TreeMap()
 
    fun set(keyFrame: KeyFrame<T>) {
       keyFrames[keyFrame.time] = keyFrame
@@ -64,6 +71,13 @@ class KeyFrameList<T> {
    val size get() = keyFrames.size
    fun isEmpty() = keyFrames.isEmpty()
    fun isNotEmpty() = keyFrames.isNotEmpty()
+
+   fun use(surface: UiSurface) = apply {
+      usedBy(surface)
+   }
+   fun clearUse(surface: UiSurface) {
+      clearUsage(surface)
+   }
 }
 
 sealed interface InterpolationInterval<T> {
@@ -72,7 +86,7 @@ sealed interface InterpolationInterval<T> {
    data class BetweenKeyFrames<T>(val left: KeyFrame<T>, val right: KeyFrame<T>) : InterpolationInterval<T> {
       val duration by lazy { right.time - left.time }
       override fun interpolate(time: TimeStamp) =
-         left.interpolator.interpolate(left.value, right.value, left.easing.ease((time - left.time) / duration))
+         left.interpolator.interpolate(left.value, right.value, right.easing.ease((time - left.time) / duration))
    }
 
    data class BeforeFirstKeyFrame<T>(val keyFrame: KeyFrame<T>) : InterpolationInterval<T> {

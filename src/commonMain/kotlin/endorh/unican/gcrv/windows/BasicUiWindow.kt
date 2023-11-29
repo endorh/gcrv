@@ -119,6 +119,7 @@ class BasicUiWindow(scene: EditorScene) : BaseWindow("Demo Window", scene) {
                         .margin(sizes.smallGap)
                         .font(sizes.largeText)
                 }
+/*
                 Row {
                     fun ImageScope.imageLabel(text: String) {
                         Text(text) {
@@ -170,6 +171,7 @@ class BasicUiWindow(scene: EditorScene) : BaseWindow("Demo Window", scene) {
                         imageLabel("sz: 400x300, img: stretch")
                     }
                 }
+*/
                 Row {
                     for (r in 0..270 step 90) {
                         Text("Another text with rotation: $r") {

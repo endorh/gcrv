@@ -4,7 +4,10 @@ import endorh.unican.gcrv.line_algorithms.Line2D
 import endorh.unican.gcrv.line_algorithms.Line2DRenderer
 import endorh.unican.gcrv.line_algorithms.PixelRendererContext
 import endorh.unican.gcrv.util.F
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable @SerialName("bresenham-first-octant")
 object BresenhamFirstOctantRenderer : Line2DRenderer {
    override val name = "Bresenham (1st octant only)"
    override fun PixelRendererContext.render(line: Line2D) {

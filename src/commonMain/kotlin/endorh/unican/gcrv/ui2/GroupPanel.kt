@@ -2,34 +2,36 @@ package endorh.unican.gcrv.ui2
 
 import de.fabmax.kool.modules.ui2.*
 
-fun UiScope.Section(title: String, expanded: Boolean = true, body: UiScope.() -> Unit) {
-   val panel = remember { CollapsablePanel(title, expanded, body) }
-   panel.setup(title, expanded, body)
+fun UiScope.Group(title: String, expanded: Boolean = true, titleContent: RowScope.() -> Unit = {}, body: UiScope.() -> Unit) {
+   val panel = remember { GroupPanel(title, expanded, titleContent, body) }
+   panel.setup(title, expanded, titleContent, body)
    panel()
 }
 
-open class CollapsablePanel(
+open class GroupPanel(
    var title: String,
    var expanded: Boolean,
+   var titleContent: RowScope.() -> Unit = {},
    var body: UiScope.() -> Unit
 ) : Composable {
    val isCollapsed = mutableSerialStateOf(!expanded)
    val isHovered = mutableSerialStateOf(false)
 
-   fun setup(title: String, expanded: Boolean, body: UiScope.() -> Unit) {
+   fun setup(title: String, expanded: Boolean, titleContent: RowScope.() -> Unit, body: UiScope.() -> Unit) {
       this.title = title
       if (this.expanded != expanded) {
          isCollapsed.value = !expanded
          this.expanded = expanded
       }
+      this.titleContent = titleContent
       this.body = body
    }
 
    override fun UiScope.compose() = Column(Grow.Std) {
-      modifier.backgroundColor(colors.backgroundVariant)
+      modifier.background(RoundRectBackground(colors.backgroundVariant, sizes.smallGap))
       Row(Grow.Std) {
          modifier
-            .backgroundColor(colors.secondaryVariantAlpha(if (isHovered.use()) 0.75F else 0.5F))
+            .background(TitleBarBackground(colors.secondaryVariantAlpha(if (isHovered.use()) 0.75F else 0.5F), 8F, isCollapsed.use()))
             .onClick { isCollapsed.toggle() }
             .padding(horizontal = sizes.gap, vertical = sizes.smallGap)
             .onEnter { isHovered.set(true) }
@@ -41,14 +43,13 @@ open class CollapsablePanel(
                .margin(horizontal = sizes.gap)
                .alignY(AlignmentY.Center)
          }
-         Text(title) { }
+
+         titleContent()
+         Text(title) {}
       }
-      if (!isCollapsed.value) {
-         content()
-      } else {
-         divider(colors.secondaryVariantAlpha(0.75F), horizontalMargin = 0.dp, thickness = 1.dp)
-      }
+      if (!isCollapsed.value) content()
    }
 
    open fun UiScope.content() = body()
 }
+

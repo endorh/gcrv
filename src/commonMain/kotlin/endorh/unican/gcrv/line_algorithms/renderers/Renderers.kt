@@ -7,9 +7,9 @@ import endorh.unican.gcrv.line_algorithms.Point2DRenderer
 import endorh.unican.gcrv.line_algorithms.renderers.line.*
 import endorh.unican.gcrv.line_algorithms.renderers.point.CircleAntiAliasPointRenderer
 import endorh.unican.gcrv.line_algorithms.renderers.point.CirclePointRenderer
+import endorh.unican.gcrv.line_algorithms.renderers.point.HollowCircleAntiAliasPointRenderer
 import endorh.unican.gcrv.line_algorithms.renderers.point.SquarePointRenderer
 import endorh.unican.gcrv.line_algorithms.ui.mix
-import endorh.unican.gcrv.util.toTitleCase
 
 val LineRenderers: List<Line2DRenderer> = mutableListOf(
    OrthogonalLineRenderer,
@@ -27,6 +27,7 @@ val PointRenderers: List<Point2DRenderer> = mutableListOf(
    SquarePointRenderer,
    CirclePointRenderer,
    CircleAntiAliasPointRenderer,
+   HollowCircleAntiAliasPointRenderer,
 )
 
 fun UiScope.OptionalLineRendererPicker(
@@ -51,9 +52,9 @@ fun Any?.displayName() = when (this) {
    else -> toString()
 }
 
-fun <T: Any> UiScope.OptionPicker(
-   values: List<T>, idx: Int, onChange: (Int) -> Unit, modifier: ComboBoxScope.() -> Unit = {},
-   scopeName: String? = null, tint: Color? = null
+fun <T: Any> UiScope.OptionIdxPicker(
+   values: List<T>, idx: Int, onChange: (Int) -> Unit, scopeName: String? = null,
+   tint: Color? = null, modifier: ComboBoxScope.() -> Unit = {}
 ) {
    ComboBox(scopeName) {
       this.modifier
@@ -61,14 +62,23 @@ fun <T: Any> UiScope.OptionPicker(
          .selectedIndex(idx)
          .onItemSelected(onChange).apply {
             textBackgroundColor = colors.secondaryVariantAlpha(0.5f).mix(tint, 0.4F)
+         }.apply {
+            popupBackgroundColor = colors.backgroundAlpha(0.95F)
          }
       modifier()
    }
 }
 
-fun <T> UiScope.OptionalOptionPicker(
-   values: List<T>, idx: Int?, onChange: (Int?) -> Unit, modifier: ComboBoxScope.() -> Unit = {},
-   scopeName: String? = null, tint: Color? = null
+fun <T: Any> UiScope.OptionPicker(
+   values: List<T>, value: T, onChange: (T) -> Unit, scopeName: String? = null,
+   tint: Color? = null, modifier: ComboBoxScope.() -> Unit = {}
+) = OptionIdxPicker(
+   values, values.indexOf(value), { onChange(values[it]) }, scopeName, tint, modifier
+)
+
+fun <T> UiScope.OptionalOptionIdxPicker(
+   values: List<T>, idx: Int?, onChange: (Int?) -> Unit, scopeName: String? = null,
+   tint: Color? = null, modifier: ComboBoxScope.() -> Unit = {}
 ) {
    ComboBox(scopeName) {
       this.modifier
@@ -76,10 +86,20 @@ fun <T> UiScope.OptionalOptionPicker(
          .selectedIndex(if (idx != null) idx + 1 else 0)
          .onItemSelected { onChange(if (it > 0) it - 1 else null) }.apply {
             textBackgroundColor = colors.secondaryVariantAlpha(0.5f).mix(tint, 0.4F)
+         }.apply {
+            popupBackgroundColor = colors.backgroundAlpha(0.95F)
          }
       modifier()
    }
 }
+
+fun <T> UiScope.OptionalOptionPicker(
+   values: List<T>, value: T?, onChange: (T?) -> Unit, scopeName: String? = null,
+   tint: Color? = null, modifier: ComboBoxScope.() -> Unit = {}
+) = OptionalOptionIdxPicker<T>(
+   values, if (value != null) values.indexOf(value) else null, { onChange(if (it != null) values[it] else null) },
+   scopeName, tint, modifier
+)
 
 fun UiScope.OptionalPointRendererPicker(
    state: MutableStateValue<Point2DRenderer?>, block: ComboBoxScope.() -> Unit = {}
