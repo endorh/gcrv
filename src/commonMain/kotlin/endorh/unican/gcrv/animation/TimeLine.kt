@@ -1,9 +1,7 @@
 package endorh.unican.gcrv.animation
 
 import de.fabmax.kool.modules.ui2.mutableStateOf
-import endorh.unican.gcrv.objects.Object2DStack
 import endorh.unican.gcrv.ui2.MutableSerialStateValue
-import endorh.unican.gcrv.ui2.mutableSerialStateOf
 import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.I
 import endorh.unican.gcrv.util.roundToString

@@ -7,21 +7,19 @@ import de.fabmax.kool.modules.ui2.MutableState
 import de.fabmax.kool.modules.ui2.UiScope
 import de.fabmax.kool.modules.ui2.UiSurface
 import de.fabmax.kool.util.Color
-import endorh.unican.gcrv.line_algorithms.Line2D
-import endorh.unican.gcrv.line_algorithms.LineStyle
-import endorh.unican.gcrv.line_algorithms.PixelRendererContext
-import endorh.unican.gcrv.line_algorithms.renderers.PresentableObject
-import endorh.unican.gcrv.line_algorithms.renderers.line.BresenhamRendererBreadthAntiAlias
-import endorh.unican.gcrv.line_algorithms.ui.LabeledFloatField
-import endorh.unican.gcrv.line_algorithms.ui.LabeledVec2fField
-import endorh.unican.gcrv.types.Vec2fSerializer
+import endorh.unican.gcrv.scene.Line2D
+import endorh.unican.gcrv.scene.LineStyle
+import endorh.unican.gcrv.scene.PixelRendererContext
+import endorh.unican.gcrv.renderers.PresentableObject
+import endorh.unican.gcrv.scene.renderLine
+import endorh.unican.gcrv.ui2.LabeledFloatField
+import endorh.unican.gcrv.ui2.LabeledVec2fField
+import endorh.unican.gcrv.serialization.Vec2fSerializer
 import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.times
 import endorh.unican.gcrv.util.toTitleCase
 import endorh.unican.gcrv.util.toVec2i
 import kotlinx.serialization.*
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.CompositeDecoder
@@ -33,11 +31,13 @@ import kotlin.reflect.KProperty
 
 open class EasingType<T: Easing>(val name: String, val factory: () -> T) : PresentableObject, KSerializer<T> {
    override val displayName get() = name
-   private val controlPoints = factory().controlPoints
+   private val controlPoints by lazy { factory().controlPoints }
 
-   override val descriptor: SerialDescriptor = buildClassSerialDescriptor(name) {
-      controlPoints.forEachIndexed { i, p ->
-         element(p.name, Vec2fSerializer.descriptor)
+   override val descriptor: SerialDescriptor by lazy {
+      buildClassSerialDescriptor(name) {
+         controlPoints.forEach {
+            element(it.name, Vec2fSerializer.descriptor)
+         }
       }
    }
    override fun serialize(encoder: Encoder, value: T) {
@@ -77,6 +77,7 @@ val EasingTypes = mutableListOf(
    Easing.EaseCubicOut.Type,
    Easing.EaseCubicInOut.Type,
    Easing.EaseElasticIn.Type,
+   Easing.SinusoidalEasing.Type,
    Easing.CubicBezier.Type,
 )
 
@@ -217,19 +218,38 @@ abstract class Easing(val type: EasingType<*>) {
       val amplitude get() = period_amplitude.y
 
       override fun PixelRendererContext.drawGizmos(size: Int) {
-         with (BresenhamRendererBreadthAntiAlias) {
-            render(Line2D(Vec2i(0, 0), (period_amplitude * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
-         }
+         renderLine(Line2D(Vec2i(0, 0), (period_amplitude * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
       }
 
       override fun ease(t: Float): Float {
          if (t == 0F || t == 1F) return t
+         if (period == 0F) return if (t <= 1F) 0F else 1F
          val s = period / 4
          val tr = t - 1
          return -(amplitude * 2F.pow(10 * tr) * sin((tr - s) * (2 * PI) / period)).toFloat()
       }
 
       object Type : EasingType<EaseElasticIn>("Elastic Ease In", { EaseElasticIn() })
+   }
+
+   @Serializable(SinusoidalEasing.Type::class) @SerialName("periodic")
+   class SinusoidalEasing(
+      semiPeriod: Float = 1F,
+      twiceAmplitude: Float = 1F,
+   ) : Easing(Type) {
+      val period_amplitude by control(Vec2f(semiPeriod, twiceAmplitude))
+
+      val semiPeriod get() = period_amplitude.x
+      val twiceAmplitude get() = period_amplitude.y
+
+      override fun ease(t: Float) =
+         0.5F - cos(t * PI_F / semiPeriod) * twiceAmplitude / 2
+
+      override fun PixelRendererContext.drawGizmos(size: Int) {
+         renderLine(Line2D(Vec2i(0, 0), (period_amplitude * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
+      }
+
+      object Type : EasingType<SinusoidalEasing>("Periodic", { SinusoidalEasing() })
    }
 
    @Serializable(CubicBezier.Type::class) @SerialName("cubic-bezier")
@@ -241,10 +261,8 @@ abstract class Easing(val type: EasingType<*>) {
       var end by control(e)
 
       override fun PixelRendererContext.drawGizmos(size: Int) {
-         with (BresenhamRendererBreadthAntiAlias) {
-            render(Line2D(Vec2i(0, 0), (start * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
-            render(Line2D(Vec2i(size - 1, size - 1), (end * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
-         }
+         renderLine(Line2D(Vec2i(0, 0), (start * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
+         renderLine(Line2D(Vec2i(size - 1, size - 1), (end * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
       }
 
       var xS = s.x
@@ -397,7 +415,9 @@ abstract class Easing(val type: EasingType<*>) {
        * When easing, the `t` value from [Easing] is our `x`.
        */
       override fun ease(t: Float) =
-         if (sampleValues == null) t else calcBezier(getTForX(t), yS, yE) // Short-circuit linear bezier
+         if (isLinear) t else calcBezier(getTForX(t), yS, yE) // Short-circuit linear bezier
+
+      val isLinear get() = sampleValues == null
 
       override fun toString() = "cubicBezier($xS, $yS, $xE, $yE)"
 
@@ -420,5 +440,9 @@ abstract class Easing(val type: EasingType<*>) {
       }
 
       object Type : EasingType<CubicBezier>("Cubic Bezier", { CubicBezier() })
+   }
+
+   companion object {
+      private val PI_F = PI.F
    }
 }

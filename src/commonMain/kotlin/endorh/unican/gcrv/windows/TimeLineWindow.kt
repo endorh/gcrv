@@ -4,9 +4,9 @@ import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
 import endorh.unican.gcrv.animation.KeyFrameList
 import endorh.unican.gcrv.animation.EasingCurvePopupEditor
-import endorh.unican.gcrv.line_algorithms.ui.IntField
-import endorh.unican.gcrv.line_algorithms.ui.TimeRangeField
-import endorh.unican.gcrv.objects.property.AnimProperty
+import endorh.unican.gcrv.ui2.IntField
+import endorh.unican.gcrv.ui2.TimeRangeField
+import endorh.unican.gcrv.scene.property.AnimProperty
 import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.I
 import endorh.unican.gcrv.util.pad

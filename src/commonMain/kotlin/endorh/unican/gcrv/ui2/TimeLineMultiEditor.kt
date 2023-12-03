@@ -10,11 +10,11 @@ import endorh.unican.gcrv.animation.KeyFrame
 import endorh.unican.gcrv.animation.TimeLine
 import endorh.unican.gcrv.animation.TimeRange
 import endorh.unican.gcrv.animation.TimeStamp
-import endorh.unican.gcrv.objects.*
-import endorh.unican.gcrv.objects.property.AnimProperty
-import endorh.unican.gcrv.objects.property.CompoundAnimProperty
-import endorh.unican.gcrv.objects.property.PropertyList
-import endorh.unican.gcrv.objects.property.PropertyNode
+import endorh.unican.gcrv.scene.*
+import endorh.unican.gcrv.scene.property.AnimProperty
+import endorh.unican.gcrv.scene.property.CompoundAnimProperty
+import endorh.unican.gcrv.scene.property.PropertyList
+import endorh.unican.gcrv.scene.property.PropertyNode
 import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.toTitleCase
 import kotlin.contracts.ExperimentalContracts
@@ -43,7 +43,7 @@ open class TimeLineMultiEditorModifier(surface: UiSurface) : UiModifier(surface)
 
    var objects: List<Object2D> by property(emptyList())
       internal set
-   internal var properties: List<List<PropertyNode>> = emptyList()
+   internal var properties: List<List<PropertyNode<*>>> = emptyList()
 
    var fpsGrid: Int? by property(null)
    var snapToGrid: Boolean by property(false)
@@ -141,13 +141,13 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
    override fun measureContentSize(ctx: KoolContext) {
       val th = modifier.trackSize.px
       var h = 24F + 12F
-      fun visit(p: PropertyNode, suppressTitle: Boolean = false) {
+      fun visit(p: PropertyNode<*>, suppressTitle: Boolean = false) {
          h += th
          if (p is CompoundAnimProperty) {
             if (suppressTitle) h -= th
             for (sub in p.properties.values)
                visit(sub)
-         } else if (p is PropertyList<*>) {
+         } else if (p is PropertyList<*, *>) {
             for (sub in p.entries) {
                visit(sub, true)
                if (sub is CompoundAnimProperty) h += 4F
@@ -205,7 +205,7 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
       var trackX = paddingStartPx
       var trackY = 24F + 12F - yScroll
       val treeLineColor = modifier.propertyTextColor.withAlpha(0.5F)
-      fun drawTrack(node: PropertyNode, suppressTitle: Boolean = false) {
+      fun drawTrack(node: PropertyNode<*>, suppressTitle: Boolean = false) {
          val focused = node == focusedProperty.value
          if (node !is CompoundAnimProperty || !suppressTitle) drawPropName(
             node.name.toTitleCase(), trackX, trackY,
@@ -228,7 +228,7 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
                   trackX -= 8F
                }
             }
-            is PropertyList<*> -> {
+            is PropertyList<*, *> -> {
                trackY += trackH
                trackX += 8F
                for (sub in node.entries) {
@@ -288,14 +288,14 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
       val y = (position.y + scrollState.yScrollDp.value.dp.px)
       val trackH = modifier.trackSize.px
       var py = 24F + 12F + trackH/2
-      fun visit(p: PropertyNode, suppressTitle: Boolean = false): AnimProperty<*>? {
+      fun visit(p: PropertyNode<*>, suppressTitle: Boolean = false): AnimProperty<*>? {
          if (py >= y && p is AnimProperty<*>) return p
          py += trackH
          if (p is CompoundAnimProperty) {
             if (suppressTitle) py -= trackH
             for (sub in p.properties.values)
                visit(sub)?.let { return it }
-         } else if (p is PropertyList<*>) {
+         } else if (p is PropertyList<*, *>) {
             for (sub in p.entries) {
                visit(sub, true)?.let { return it }
                if (sub is CompoundAnimProperty) py += 4F

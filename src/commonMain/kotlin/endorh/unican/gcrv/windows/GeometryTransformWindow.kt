@@ -3,13 +3,9 @@ package endorh.unican.gcrv.windows
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
-import endorh.unican.gcrv.line_algorithms.ui.FloatField
-import endorh.unican.gcrv.line_algorithms.ui.LabeledBooleanField
-import endorh.unican.gcrv.line_algorithms.ui.LabeledField
-import endorh.unican.gcrv.line_algorithms.ui.Vec2fField
-import endorh.unican.gcrv.objects.Object2D
+import endorh.unican.gcrv.scene.Object2D
 import endorh.unican.gcrv.transformations.Transform2D
-import endorh.unican.gcrv.ui2.Section
+import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.rad
 import endorh.unican.gcrv.util.unaryMinus
 
@@ -26,9 +22,7 @@ class GeometryTransformWindow(scene: EditorScene) : BaseWindow("Geo Transform", 
 
    fun applyTransform(t: Transform2D, o: Object2D, noLocal: Boolean = false) {
       val tt = if (local.value && !noLocal) t.localize(o.geometricCenter) else t
-      for (prop in o.geometry) {
-         prop.value = tt * prop.value
-      }
+      for (prop in o.geometry) prop.applyTransform(tt)
       for (child in o.children)
          applyTransform(tt, child, true)
    }
@@ -54,7 +48,7 @@ class GeometryTransformWindow(scene: EditorScene) : BaseWindow("Geo Transform", 
             }
             Button("/") {
                modifier.margin(4.dp).width(Grow(0.15F)).onClick {
-                  applyTransform(Transform2D.translate(translate.value).inverse())
+                  applyTransform(Transform2D.translate(translate.value).inverse)
                }
             }
          }
@@ -71,7 +65,7 @@ class GeometryTransformWindow(scene: EditorScene) : BaseWindow("Geo Transform", 
             }
             Button("/") {
                modifier.margin(4.dp).width(Grow(0.15F)).onClick {
-                  applyTransform(Transform2D.scale(scale.value).inverse())
+                  applyTransform(Transform2D.scale(scale.value).inverse)
                }
             }
          }
@@ -88,7 +82,7 @@ class GeometryTransformWindow(scene: EditorScene) : BaseWindow("Geo Transform", 
             }
             Button("/") {
                modifier.margin(4.dp).width(Grow(0.15F)).onClick {
-                  applyTransform(Transform2D.rotate(rad(rotation.value)).inverse())
+                  applyTransform(Transform2D.rotate(rad(rotation.value)).inverse)
                }
             }
          }
@@ -126,7 +120,7 @@ class GeometryTransformWindow(scene: EditorScene) : BaseWindow("Geo Transform", 
             }
             Button("/") {
                modifier.margin(4.dp).width(Grow(0.15F)).onClick {
-                  applyTransform(Transform2D.shear(shear.value).inverse())
+                  applyTransform(Transform2D.shear(shear.value).inverse)
                }
             }
          }

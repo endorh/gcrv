@@ -1,9 +1,9 @@
 package endorh.unican.gcrv.transformations
 
 import de.fabmax.kool.math.Vec2f
-import endorh.unican.gcrv.objects.property.CompoundAnimProperty
-import endorh.unican.gcrv.objects.property.float
-import endorh.unican.gcrv.objects.property.vec2f
+import endorh.unican.gcrv.scene.property.CompoundAnimProperty
+import endorh.unican.gcrv.scene.property.float
+import endorh.unican.gcrv.scene.property.vec2f
 import endorh.unican.gcrv.util.deg
 import endorh.unican.gcrv.util.rad
 import kotlin.reflect.KProperty

@@ -4,7 +4,6 @@ import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.modules.ui2.AutoPopup
 import de.fabmax.kool.util.Color
-import endorh.unican.gcrv.line_algorithms.ui.BlendTextField
 
 private val misPositionedColorMarkPattern = Regex("""(?<=.)#""")
 fun String.onlyColorCharacters(): String =

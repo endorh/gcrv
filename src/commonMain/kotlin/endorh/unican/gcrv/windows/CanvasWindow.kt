@@ -1,21 +1,22 @@
 package endorh.unican.gcrv.windows
 
 import de.fabmax.kool.input.CursorShape
+import de.fabmax.kool.input.InputStack
 import de.fabmax.kool.input.PointerInput
 import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
-import de.fabmax.kool.util.Color
-import de.fabmax.kool.util.RenderLoop
+import de.fabmax.kool.util.*
 import endorh.unican.gcrv.EditorScene
-import endorh.unican.gcrv.objects.LineObject2D
+import endorh.unican.gcrv.scene.Gizmo2D
+import endorh.unican.gcrv.scene.objects.LineObject2D
 import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.*
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlin.time.Duration
+import kotlin.time.measureTime
 
 class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
     var lastPoint: Vec2i? = null
@@ -30,10 +31,16 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
     val canvas get() = canvasState.value
     lateinit var canvasScope: CanvasScope
 
+    var updateJob: Job? = null
+    var updatePublicationJob: Job? = null
+
     val pipeline get() = scene.pipeline
 
+    var lastDraggedGizmo: Gizmo2D? = null
     var lastDragStart: Vec2i? = null
     var lastDragOrigin: Vec2i = origin.value
+
+    val lastCanvasUpdateTime = mutableStateOf(Duration.ZERO)
 
     val popupCanvasCenter = mutableSerialStateOf(Vec2f(0F, 0F))
     val popupCanvasSize = Vec2i(350, 200)
@@ -45,7 +52,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
             modifier.backgroundColor(Color.TRANSPARENT)
             Box {
                 modifier
-                    .background(RoundRectBackground(colors.backgroundVariant.withAlpha(0.7F), sizes.gap))
+                    .background(RoundRectBackground(colors.backgroundAlpha(0.7F), sizes.gap))
                     .border(RoundRectBorder(colors.primary, sizes.gap, sizes.borderWidth))
                     .padding(sizes.gap)
                 Canvas(popupCanvas) {
@@ -91,7 +98,24 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
 
         launch {
             scene.canvasUpdates.collectLatest {
-                updateCanvas(it)
+                // println("Update collected! [clear=${it.clear}]")
+                // if (updateJob?.isActive == true) {
+                //     // pendingUpdate = it.conflate(pendingUpdate)
+                //     // return@collectLatest
+                //     // println("Previous update is still running")
+                //     // delay(0L)
+                // }
+                // updateJob?.cancel()
+                // updateJob = launch {
+                    updatePublicationJob?.join()
+                    updatePublicationJob = null
+                    updateCanvas(it)
+                    // pendingUpdate?.let {
+                    //     pendingUpdate = null
+                    //     println("Rescheduling conflated update")
+                    //     // scene.canvasUpdates.emit(it)
+                    // }
+                // }
             }
         }
     }
@@ -124,17 +148,62 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
                     .uvRect(UvRect.FULL)
                     .canvasSize(CanvasSize.FixedScale(1F))
                     .size(Dp.fromPx(size.x.F), Dp.fromPx(size.y.F))
-                    .onClick {
-                        if (it.pointer.isLeftButtonClicked) {
-                            val (x, y) = it.canvasPosition.round
-                            val last = lastPoint
-                            canvas.update {
-                                F.C[x, y] = Color.WHITE
+                    .onClick { ev ->
+                        if (ev.pointer.isLeftButtonClicked) {
+                            scene.objectDrawingContext.value?.let { ctx ->
+                                val pos = Vec2f(ev.canvasPosition)
+                                ctx.apply {
+                                    dragStart(pos)
+                                    drag(pos)
+                                    dragEnd(pos)
+                                    if (isFinished) {
+                                        scene.drawObject(drawnObject)
+                                        scene.objectDrawingContext.value = null
+                                    }
+                                }
+                            } ?: scene.brushType.value?.let { type ->
+                                val ctx = type.createDrawerContext()?.apply {
+                                    val pos = Vec2f(ev.canvasPosition)
+                                    dragStart(pos)
+                                    drag(pos)
+                                    dragEnd(pos)
+                                } ?: return@let null
+                                scene.objectDrawingContext.value = ctx
+                                if (ctx.isFinished) {
+                                    scene.drawObject(ctx.drawnObject)
+                                    scene.objectDrawingContext.value = null
+                                }
+                                Unit
+                            } ?: run {
+                                val pos = ev.canvasPosition
+                                scene.objectStack.collectColliders()
+                                    .asSequence()
+                                    .filter { it.first.fastContains(pos.toVec2i()) }
+                                    .sortedBy { it.first.center.toVec2f().distance(pos) }
+                                    .firstOrNull()?.let { (c, o) ->
+                                        if (ModifierState.ctrlPressed) {
+                                            scene.selectedObjects.toggle(o)
+                                        } else {
+                                            scene.selectedObjects.atomic {
+                                                clear()
+                                                add(o)
+                                            }
+                                        }
+                                        scene.updateCanvas()
+                                    } ?: run {
+                                        scene.selectedObjects.clear()
+                                        scene.updateCanvas()
+                                    }
                             }
-                            lastPoint = if (last != null) {
-                                scene.drawObject(LineObject2D(last, Vec2i(x, y), scene.toolLineStyle.value.copy()))
-                                null
-                            } else Vec2i(x, y)
+                        } else if (ev.pointer.isRightButtonClicked) {
+                            scene.objectDrawingContext.value?.apply {
+                                rightClick()
+                                if (isFinished) {
+                                    scene.drawObject(drawnObject)
+                                    scene.objectDrawingContext.value = null
+                                }
+                                Unit
+                            }
                         }
                     }
                     .onHover {
@@ -150,30 +219,83 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
                             popup.hide()
                             PointerInput.cursorShape = CursorShape.DEFAULT
                         }
+                        scene.objectDrawingContext.value?.apply {
+                            hover(it.canvasPosition)
+                            // We don't allow ending a draw operation on hover
+                        }
                     }
-                    .onDragStart {
-                        if (it.pointer.isMiddleButtonDown || it.pointer.isRightButtonDown) {
-                            lastDragStart = it.position.toVec2i()
+                    .onDragStart { ev ->
+                        if (ev.pointer.isLeftButtonDown) {
+                            scene.objectDrawingContext.value?.apply {
+                                val pos = Vec2f(ev.canvasPosition)
+                                dragStart(pos)
+                                drag(pos)
+                                if (isFinished) {
+                                    scene.drawObject(drawnObject)
+                                    scene.objectDrawingContext.value = null
+                                }
+                            } ?: run {
+                                scene.brushType.value?.let { type ->
+                                    type.createDrawerContext()?.apply {
+                                        val pos = Vec2f(ev.canvasPosition)
+                                        dragStart(pos)
+                                        drag(pos)
+                                        scene.objectDrawingContext.value = this
+                                    }
+                                } ?: run {
+                                    val pos = ev.canvasPosition.toVec2i()
+                                    scene.selectedObjects.asSequence()
+                                        .flatMap { it.gizmos.asSequence() }
+                                        .filter { pos in it.collider }
+                                        .sortedBy { it.collider.centerDistance(pos) }
+                                        .firstOrNull()?.let { gizmo ->
+                                            lastDraggedGizmo = gizmo
+                                            return@onDragStart
+                                        }
+                                }
+                            }
+                        }
+                        if (ev.pointer.isMiddleButtonDown || ev.pointer.isRightButtonDown) {
+                            lastDragStart = ev.position.toVec2i()
                             lastDragOrigin = origin.value
                             PointerInput.cursorShape = CursorShape.HAND
                         } else lastDragStart = null
                     }
                     .onDrag {
-                        lastDragStart?.let { s ->
+                        lastDraggedGizmo?.let { g ->
+                            g.drag(it.canvasPosition)
+                        } ?: lastDragStart?.let { s ->
                             val (sx, sy) = s
                             val (x, y) = it.position.round
                             origin.value = Vec2i(lastDragOrigin.x + sx - x, lastDragOrigin.y - sy + y)
                             PointerInput.cursorShape = CursorShape.HAND
+                        } ?: scene.objectDrawingContext.value?.apply {
+                            drag(it.canvasPosition)
                         }
                     }
                     .onDragEnd {
-                        if (lastDragStart != null)
+                        lastDraggedGizmo = null
+                        if (lastDragStart != null) {
                             PointerInput.cursorShape = CursorShape.DEFAULT
+                        } else scene.objectDrawingContext.value?.apply {
+                            val pos = Vec2f(it.canvasPosition)
+                            drag(pos)
+                            dragEnd(pos)
+                            if (isFinished) {
+                                scene.drawObject(drawnObject)
+                                scene.objectDrawingContext.value = null
+                            }
+                        }
                         lastDragStart = null
                         lastDragOrigin = origin.value
                     }
             }
             popup()
+            Text("${lastCanvasUpdateTime.use().inWholeMilliseconds} ms") {
+                modifier.alignX(AlignmentX.End).alignY(AlignmentY.Bottom)
+                    .padding(1.dp).zLayer(10)
+                    .textColor(Color.GRAY)
+            }
         }
     }
 
@@ -187,7 +309,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
             val l = cx - w / 2 / s
             val t = cy - h / 2 / s
             for (i in 0..<w) for (j in 0..<h)
-                F[i, j] = canvas.F[(l + i / s).I, (t + j / s).I]
+                F[i, j] = canvas.R.F[(l + i / s).I, (t + j / s).I]
 
             val iw = w / s
             val ih = h / s
@@ -214,15 +336,26 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
         return size
     }
 
-    suspend fun updateCanvas(event: EditorScene.CanvasUpdateEvent) {
+    fun updateCanvas(event: EditorScene.CanvasUpdateEvent) {
+        // println("Canvas update queued for the render loop!")
+        doUpdateCanvas(event)
         // If we attempt to upload textures to GPU from a work thread OpenGL can crash
-        withContext(Dispatchers.RenderLoop) {
-            doUpdateCanvas(event)
-        }
+        // launchOnMainThread {  }
+        // withContext(Dispatchers.RenderLoop) {
+        //     println("> Canvas update has reached the render loop")
+        //     doUpdateCanvas(event)
+        //     println("< Canvas update is done on the render loop")
+        // }
     }
 
     fun doUpdateCanvas(event: EditorScene.CanvasUpdateEvent) {
-        if (event.clear) pipeline.clear(canvas)
-        pipeline.render(canvas)
+        lastCanvasUpdateTime.value = measureTime {
+            if (event.clear) pipeline.clear(canvas, false)
+            pipeline.render(canvas, false)
+        }
+        // Uploading a texture to GPU apparently needs to happen on the render thread
+        updatePublicationJob = launchOnMainThread {
+            canvas.update()
+        }
     }
 }

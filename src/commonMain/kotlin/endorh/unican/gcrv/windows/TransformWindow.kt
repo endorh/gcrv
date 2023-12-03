@@ -3,9 +3,9 @@ package endorh.unican.gcrv.windows
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
-import endorh.unican.gcrv.line_algorithms.ui.FloatField
-import endorh.unican.gcrv.line_algorithms.ui.LabeledField
-import endorh.unican.gcrv.line_algorithms.ui.Vec2fField
+import endorh.unican.gcrv.ui2.FloatField
+import endorh.unican.gcrv.ui2.LabeledField
+import endorh.unican.gcrv.ui2.Vec2fField
 import endorh.unican.gcrv.transformations.TaggedTransform2D
 import endorh.unican.gcrv.transformations.Transform2D
 import endorh.unican.gcrv.ui2.Section
@@ -60,7 +60,7 @@ class TransformWindow(scene: EditorScene) : BaseWindow("Transform", scene, true)
             }
             Button("/") {
                modifier.margin(4.dp).width(Grow(0.2F)).onClick {
-                  val t = transform.inverse()
+                  val t = transform.inverse
                   for (o in scene.selectedObjects)
                      o.localTransforms.entries.lastOrNull()?.let {
                         it.setFrom(t * it.transform)
@@ -93,7 +93,7 @@ class TransformWindow(scene: EditorScene) : BaseWindow("Transform", scene, true)
             }
             Button("/") {
                modifier.margin(4.dp).width(Grow(0.2F)).onClick {
-                  val t = transform.inverse()
+                  val t = transform.inverse
                   for (o in scene.selectedObjects)
                      o.globalTransforms.entries.lastOrNull()?.let {
                         it.setFrom(t * it.transform)
@@ -122,17 +122,17 @@ class TransformWindow(scene: EditorScene) : BaseWindow("Transform", scene, true)
                   for (o in scene.selectedObjects) {
                      val l = t.localize(o.geometricCenter)
                      for (prop in o.geometry)
-                        prop.value = l * prop.value
+                        prop.applyTransform(l)
                   }
                }
             }
             Button("Revert") {
                modifier.margin(4.dp).width(Grow(0.35F)).onClick {
-                  val t = transform.inverse()
+                  val t = transform.inverse
                   for (o in scene.selectedObjects) {
                      val l = t.localize(o.geometricCenter)
                      for (prop in o.geometry)
-                        prop.value = l * prop.value
+                        prop.applyTransform(l)
                   }
                }
             }
@@ -146,15 +146,15 @@ class TransformWindow(scene: EditorScene) : BaseWindow("Transform", scene, true)
                   val t = transform
                   for (o in scene.selectedObjects)
                      for (prop in o.geometry)
-                        prop.value = t * prop.value
+                        prop.applyTransform(t)
                }
             }
             Button("Revert") {
                modifier.margin(4.dp).width(Grow(0.35F)).onClick {
-                  val t = transform.inverse()
+                  val t = transform.inverse
                   for (o in scene.selectedObjects)
                      for (prop in o.geometry)
-                        prop.value = t * prop.value
+                        prop.applyTransform(t)
                }
             }
          }

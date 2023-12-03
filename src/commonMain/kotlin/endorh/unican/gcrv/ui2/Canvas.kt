@@ -18,7 +18,7 @@ interface CanvasScope : UiScope {
 
    fun Vec2f.toCanvasCoordinates(): MutableVec2f = MutableVec2f(this).convertToCanvasCoordinates()
    fun MutableVec2f.convertToCanvasCoordinates(): MutableVec2f = this
-   val PointerEvent.canvasPosition: MutableVec2f get() = position.convertToCanvasCoordinates()
+   val PointerEvent.canvasPosition: MutableVec2f get() = MutableVec2f(position).convertToCanvasCoordinates()
 }
 
 interface Canvas {

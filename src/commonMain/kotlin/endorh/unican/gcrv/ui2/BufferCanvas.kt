@@ -60,19 +60,25 @@ open class BufferCanvas(
     * Automatically schedule texture updates on every write operation, avoiding the need to
     * manually call [update] or batch operations within [update] blocks.
     */
-   var autoUpdate: Boolean = false
+   var autoUpdate: Boolean = false,
+   val buffersNum: Int = 2,
 ) : Canvas {
    protected val texFormat = TexFormat.RGBA
    protected val pixelCount = width * height
    protected val bufferSize = width * height * texFormat.channels
    private var withinBatchUpdate: Boolean = false
 
-   protected val buffer: Uint8Buffer = createUint8Buffer(bufferSize)
-   protected var textureData = TextureData2d(buffer, width, height, texFormat)
+   protected val buffers = Array(buffersNum) { createUint8Buffer(bufferSize) }
+   protected var readableBuffer = 0
+      private set
+   protected var currentBuffer = 0
       set(value) {
-         field = value
-         texture.updateTextureData(value)
+         readableBuffer = field
+         field = value % buffersNum
       }
+   protected val buffer: Uint8Buffer get() = buffers[currentBuffer]
+   protected val textureDatas = Array(buffersNum) { TextureData2d(buffers[it], width, height, texFormat) }
+   protected val textureData get() = textureDatas[currentBuffer]
    override val texture = BufferedTexture2d(textureData, TextureProps(texFormat), "CanvasTexture")
 
    override fun MutableVec2f.convertToCanvasCoordinates() = apply {
@@ -99,6 +105,7 @@ open class BufferCanvas(
    fun update() {
       buffer.clear()
       texture.updateTextureData(textureData)
+      currentBuffer++
    }
 
    /**
@@ -106,16 +113,22 @@ open class BufferCanvas(
     *
     * Batch updates are re-entrant, meaning if they happen within another batch update, only the
     * outer update will perform a texture update.
+    *
+    * The [doUpdate] param can be set to false to skip the final update after the batch,
+    * which is useful to suppress reentrant updates.
     */
-   fun update(changes: BufferCanvas.() -> Unit) = apply {
-      if (withinBatchUpdate) return@apply
+   fun update(doUpdate: Boolean = true, changes: BufferCanvas.() -> Unit) = apply {
+      if (withinBatchUpdate) {
+         changes()
+         return@apply
+      }
       withinBatchUpdate = true
       val prev = autoUpdate
       autoUpdate = false
       changes()
       autoUpdate = prev
       withinBatchUpdate = false
-      update()
+      if (doUpdate) update()
    }
 
    protected fun bufferCoordinates(x: Int, y: Int): Int {
@@ -131,6 +144,10 @@ open class BufferCanvas(
    protected inline fun validIndex(i: Int) = 0 <= i && i < pixelCount
    protected inline fun validIndex(x: Int, y: Int) = 0 <= x && x < width && 0 <= y && y < height
 
+   protected inline fun checkBufferIndex(i: Int) {
+      if (i < 0 || i >= bufferSize)
+         throw IndexOutOfBoundsException("Canvas buffer number out of bounds: $i for $buffersNum buffers")
+   }
    protected inline fun checkIndex(i: Int) {
       if (!validIndex(i))
          throw IndexOutOfBoundsException("Canvas buffer index out of bounds: $i for size $bufferSize")
@@ -141,6 +158,18 @@ open class BufferCanvas(
    }
 
    // Accessors
+   /**
+    * Reads a value from the given buffer.
+    * [buf] must be in range `0..<buffersNum`.
+    */
+   fun getFromBuffer(buf: Int, index: Int): Int {
+      checkBufferIndex(buf)
+      checkIndex(index)
+      val base = index * 4
+      val buffer = buffers[buf]
+      return (buffer[base].toInt() and 0xFF shl 24) or (buffer[base + 1].toInt() and 0xFF shl 16) or
+        (buffer[base + 2].toInt() and 0xFF shl 8) or (buffer[base + 3].toInt() and 0xFF)
+   }
    operator fun get(index: Int): Int {
       checkIndex(index)
       val base = index * 4
@@ -306,6 +335,8 @@ open class BufferCanvas(
 
    /**
     * Provides [Color] access to the canvas.
+    *
+    * Provides [ColorAccessor.M], mixing accessor, which mixes semi-transparent colors on writes.
     */
    inline val C: ColorAccessor get() = ColorAccessor(this)
    @JvmInline value class ColorAccessor(private val canvas: BufferCanvas) {
@@ -313,13 +344,13 @@ open class BufferCanvas(
       operator fun set(x: Int, y: Int, color: Color) = canvas.set(x, y, color.RGBA.I)
 
       /**
-       * Provides merged [Color] writing to the canvas.
+       * Provides mixing [Color] writing to the canvas.
        *
        * When setting a pixel to a semi-transparent color, it will be mixed with the color already in the canvas.
        * @see Color.paintOver
        */
-      inline val M get() = MergeAccessor(this)
-      @JvmInline value class MergeAccessor(private val color: ColorAccessor) {
+      inline val M get() = MixingAccessor(this)
+      @JvmInline value class MixingAccessor(private val color: ColorAccessor) {
          operator fun get(x: Int, y: Int) = color[x, y]
          operator fun set(x: Int, y: Int, added: Color) = color.set(x, y, added.paintOver(color[x, y]))
       }
@@ -349,7 +380,8 @@ open class BufferCanvas(
     * Write operations outside the canvas will be ignored (and won't cause an update if [autoUpdate]
     * is `true`).
     *
-    * Provides [U] and [C], fenced [UInt]/[Color] sub-accessors.
+    * Provides [FencedAccessor.U], [FencedAccessor.C] and [FencedAccessor.B],
+    * fenced [UInt]/[Color]/[Byte] sub-accessors.
     */
    inline val F: FencedAccessor get() = FencedAccessor(this)
    @JvmInline value class FencedAccessor(internal val canvas: BufferCanvas) {
@@ -384,6 +416,8 @@ open class BufferCanvas(
 
       /**
        * Provides fenced [Color] access to the canvas buffer.
+       *
+       * Provides [ColorAccessor.M], mixing accessor, which mixes semi-transparent colors on writes.
        */
       inline val C get() = ColorAccessor(this)
       @JvmInline value class ColorAccessor(private val fenced: FencedAccessor) {
@@ -391,13 +425,13 @@ open class BufferCanvas(
          operator fun set(x: Int, y: Int, color: Color) = fenced.set(x, y, color.RGBA.I)
 
          /**
-          * Provides merged [Color] writing to the canvas.
+          * Provides mixing [Color] writing to the canvas.
           *
           * When setting a pixel to a semi-transparent color, it will be mixed with the color already in the canvas.
           * @see Color.paintOver
           */
-         inline val M get() = MergeAccessor(this)
-         @JvmInline value class MergeAccessor(private val color: ColorAccessor) {
+         inline val M get() = MixingAccessor(this)
+         @JvmInline value class MixingAccessor(private val color: ColorAccessor) {
             operator fun get(x: Int, y: Int) = color[x, y]
             operator fun set(x: Int, y: Int, added: Color) = color.set(x, y, added.paintOver(color[x, y]))
          }
@@ -413,6 +447,89 @@ open class BufferCanvas(
          operator fun set(index: Int, value: Byte) {
             if (valid(index)) fenced.canvas.buffer[index] = value
          }
+      }
+   }
+
+   /**
+    * Provides safe read-only access to the last buffer uploaded to GPU, which is safe
+    * from interferences from concurrently running write operations.
+    *
+    * Provides [ReadSafeAccessor.F], [ReadSafeAccessor.U] and [ReadSafeAccessor.C],
+    * read-safe fenced, [UInt] and [Color] sub-accessors.
+    */
+   inline val R: ReadSafeAccessor get() = ReadSafeAccessor(this)
+   @JvmInline value class ReadSafeAccessor(val canvas: BufferCanvas) {
+      operator fun get(index: Int) = canvas.getFromBuffer(canvas.readableBuffer, index)
+      operator fun get(x: Int, y: Int) = canvas.bufferCoordinates(x, y).let { this[it] }
+
+      /**
+       * Provides fenced read-safe access to the canvas buffer.
+       *
+       * Read operations outside the canvas bounds will always return 0, that is, transparent black.
+       *
+       * Provides [FencedAccessor.U], [FencedAccessor.C] and [FencedAccessor.B],
+       * read-safe fenced [UInt]/[Color]/[Byte] sub-accessors.
+       */
+      inline val F: FencedAccessor get() = FencedAccessor(this)
+      @JvmInline value class FencedAccessor(private val read: ReadSafeAccessor) {
+         operator fun get(index: Int) = if (read.canvas.validIndex(index)) read[index] else 0
+         operator fun get(x: Int, y: Int): Int {
+            val cx = x - read.canvas.origin.x
+            val cy = y - read.canvas.origin.y
+            return if (read.canvas.validIndex(cx, cy)) read[read.canvas.bufferIndex(cx, cy)] else 0
+         }
+
+         /**
+          * Provides fenced read-safe [UInt] access to the canvas buffer.
+          */
+         inline val U get() = UnsignedAccessor(this)
+         @JvmInline value class UnsignedAccessor(private val fenced: FencedAccessor) {
+            operator fun get(index: Int) = fenced[index].U
+            operator fun get(x: Int, y: Int) = fenced[x, y].U
+         }
+
+         /**
+          * Provides fenced read-safe [Color] access to the canvas buffer.
+          */
+         inline val C get() = ColorAccessor(this)
+         @JvmInline value class ColorAccessor(private val fenced: FencedAccessor) {
+            operator fun get(x: Int, y: Int) = fenced[x, y].RGBA.C
+         }
+
+         /**
+          * Provides direct fenced read-safe [Byte] access to the canvas buffer.
+          */
+         inline val B get() = ByteAccessor(this)
+         @JvmInline value class ByteAccessor(private val fenced: FencedAccessor) {
+            private fun valid(index: Int) = 0 <= index && index < fenced.read.canvas.bufferSize
+            operator fun get(index: Int) = if (valid(index)) fenced.read[index] else 0
+         }
+      }
+
+      /**
+       * Provides read-safe [UInt] access to the canvas buffer.
+       */
+      inline val U get() = UnsignedAccessor(this)
+      @JvmInline value class UnsignedAccessor(private val read: ReadSafeAccessor) {
+         operator fun get(index: Int) = read[index].U
+         operator fun get(x: Int, y: Int) = read[x, y].U
+      }
+
+      /**
+       * Provides read-safe [Color] access to the canvas buffer.
+       */
+      inline val C get() = ColorAccessor(this)
+      @JvmInline value class ColorAccessor(private val read: ReadSafeAccessor) {
+         operator fun get(x: Int, y: Int) = read[x, y].RGBA.C
+      }
+
+      /**
+       * Provides direct read-safe [Byte] access to the canvas buffer.
+       */
+      inline val B get() = ByteAccessor(this)
+      @JvmInline value class ByteAccessor(private val read: ReadSafeAccessor) {
+         private fun valid(index: Int) = 0 <= index && index < read.canvas.bufferSize
+         operator fun get(index: Int) = if (valid(index)) read[index] else 0
       }
    }
 }

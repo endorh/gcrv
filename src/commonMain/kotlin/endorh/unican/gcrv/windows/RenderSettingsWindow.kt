@@ -2,12 +2,11 @@ package endorh.unican.gcrv.windows
 
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
-import endorh.unican.gcrv.line_algorithms.renderers.LineRendererPicker
-import endorh.unican.gcrv.line_algorithms.renderers.PointRendererPicker
-import endorh.unican.gcrv.line_algorithms.ui.LabeledField
-import endorh.unican.gcrv.line_algorithms.ui.LabeledBooleanField
-import endorh.unican.gcrv.line_algorithms.ui.LabeledColorField
-import endorh.unican.gcrv.line_algorithms.ui.LabeledIntField
+import endorh.unican.gcrv.renderers.*
+import endorh.unican.gcrv.ui2.LabeledField
+import endorh.unican.gcrv.ui2.LabeledBooleanField
+import endorh.unican.gcrv.ui2.LabeledColorField
+import endorh.unican.gcrv.ui2.LabeledIntField
 import endorh.unican.gcrv.ui2.Section
 
 class RenderSettingsWindow(scene: EditorScene) : BaseWindow("Render Settings", scene, true) {
@@ -21,16 +20,27 @@ class RenderSettingsWindow(scene: EditorScene) : BaseWindow("Render Settings", s
         modifier.width(Grow.Std)
         Column(Grow.Std) {
             Section("Layers") {
+                LabeledBooleanField("Grid", scene.gridPass.enabled)
                 LabeledBooleanField("Axes", scene.axesPass.enabled)
-                // LabeledBooleanField("Grid", scene.gridPass.enabled, { scene.gridPass.enabled = it })
+                LabeledBooleanField("Geo Splines", scene.geoSplinePass.enabled)
                 LabeledBooleanField("Geo Wires", scene.geoWireframePass.enabled)
                 LabeledBooleanField("Geo Points", scene.geoPointPass.enabled)
+                LabeledBooleanField("Splines", scene.splinePass.enabled)
                 LabeledBooleanField("Wireframe", scene.wireframePass.enabled)
                 LabeledBooleanField("Points", scene.pointPass.enabled)
+                LabeledBooleanField("Gizmos", scene.gizmoPass.enabled)
+            }
+            Section("Spline Style") {
+                LabeledField("Renderer") {
+                    OptionPicker(CubicSplineRenderers, scene.cubicSplineRenderingSettings.fallbackRenderer.use(), { scene.cubicSplineRenderingSettings.fallbackRenderer.value = it }) { it() }
+                }
+                LabeledBooleanField("Enforce", scene.cubicSplineRenderingSettings.enforceRenderer)
+                LabeledColorField("Color", scene.cubicSplineRenderingSettings.fallbackColor)
+                LabeledBooleanField("Enforce", scene.cubicSplineRenderingSettings.enforceColor)
             }
             Section("Line Style") {
                 LabeledField("Renderer") {
-                    LineRendererPicker(scene.wireframeSettings.fallbackRenderer) { it() }
+                    OptionPicker(LineRenderers, scene.wireframeSettings.fallbackRenderer.use(), { scene.wireframeSettings.fallbackRenderer.value = it }) { it() }
                 }
                 LabeledBooleanField("Enforce", scene.wireframeSettings.enforceRenderer)
                 LabeledColorField("Color", scene.wireframeSettings.fallbackColor)
@@ -38,7 +48,7 @@ class RenderSettingsWindow(scene: EditorScene) : BaseWindow("Render Settings", s
             }
             Section("Point Style") {
                 LabeledField("Renderer") {
-                    PointRendererPicker(scene.pointSettings.fallbackRenderer) { it() }
+                    OptionPicker(PointRenderers, scene.pointSettings.fallbackRenderer.use(), { scene.pointSettings.fallbackRenderer.value = it }) { it() }
                 }
                 LabeledBooleanField("Enforce", scene.pointSettings.enforceRenderer)
                 LabeledIntField("Size", scene.pointSettings.fallbackSize)

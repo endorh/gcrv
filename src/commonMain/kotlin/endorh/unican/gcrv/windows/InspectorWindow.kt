@@ -2,11 +2,11 @@ package endorh.unican.gcrv.windows
 
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
-import endorh.unican.gcrv.line_algorithms.ui.LeftBorder
-import endorh.unican.gcrv.objects.property.AnimProperty
-import endorh.unican.gcrv.objects.property.CompoundAnimProperty
-import endorh.unican.gcrv.objects.property.PropertyList
-import endorh.unican.gcrv.objects.property.PropertyNode
+import endorh.unican.gcrv.ui2.LeftBorder
+import endorh.unican.gcrv.scene.property.AnimProperty
+import endorh.unican.gcrv.scene.property.CompoundAnimProperty
+import endorh.unican.gcrv.scene.property.PropertyList
+import endorh.unican.gcrv.scene.property.PropertyNode
 import endorh.unican.gcrv.ui2.Group
 import endorh.unican.gcrv.ui2.SmallButton
 import endorh.unican.gcrv.util.toTitleCase
@@ -32,11 +32,11 @@ class InspectorWindow(scene: EditorScene) : BaseWindow("Inspector", scene, true)
         }
     }
 
-    private fun ColumnScope.propertyNodeEditor(nodeSet: List<PropertyNode>) {
+    private fun ColumnScope.propertyNodeEditor(nodeSet: List<PropertyNode<*>>) {
         when (val first = nodeSet.first()) {
             is AnimProperty<*> -> propertyEditor(nodeSet.filterIsInstance<AnimProperty<*>>().filter { it::class == first::class })
             is CompoundAnimProperty -> compoundPropertyEditor(nodeSet.filterIsInstance<CompoundAnimProperty>().filter { it::class == first::class })
-            is PropertyList<*> -> propertyListEditor(nodeSet.filterIsInstance<PropertyList<*>>().filter { it::class == first::class })
+            is PropertyList<*, *> -> propertyListEditor(nodeSet.filterIsInstance<PropertyList<*, *>>().filter { it::class == first::class })
         }
     }
     private fun ColumnScope.propertyEditor(propSet: List<AnimProperty<*>>) {
@@ -64,7 +64,7 @@ class InspectorWindow(scene: EditorScene) : BaseWindow("Inspector", scene, true)
             }
         }
     }
-    private fun ColumnScope.propertyListEditor(propSet: List<PropertyList<*>>) {
+    private fun ColumnScope.propertyListEditor(propSet: List<PropertyList<*, *>>) {
         val first = propSet.first()
         val lists = propSet.filter { it.size == first.size }
         Group(first.name.toTitleCase(), first.showExpanded, titleContent = {

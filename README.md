@@ -6,7 +6,7 @@ La práctica se ha desarrollado en Kotlin utilizando
 basado en OpenGL/Vulkan escrito en Kotlin.
 
 Los algoritmos de línea se han implementado en el paquete
-`endorh.unican.gcrv.line_algorithms.renderers.line`, implementando la interfaz
+`endorh.unican.gcrv.renderers.line`, implementando la interfaz
 `Line2DRenderer`.
 
 El resultado de la renderización se muestra utilizando el componente

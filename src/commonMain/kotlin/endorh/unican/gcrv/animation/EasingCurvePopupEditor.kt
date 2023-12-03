@@ -3,9 +3,9 @@ package endorh.unican.gcrv.animation
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
-import endorh.unican.gcrv.line_algorithms.renderers.OptionPicker
-import endorh.unican.gcrv.line_algorithms.renderers.displayName
-import endorh.unican.gcrv.line_algorithms.ui.LabeledField
+import endorh.unican.gcrv.renderers.OptionPicker
+import endorh.unican.gcrv.renderers.displayName
+import endorh.unican.gcrv.ui2.LabeledField
 import endorh.unican.gcrv.util.F
 
 fun UiScope.EasingCurvePopupEditor(

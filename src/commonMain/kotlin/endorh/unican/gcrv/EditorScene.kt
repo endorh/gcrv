@@ -14,15 +14,16 @@ import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.launchDelayed
 import endorh.unican.gcrv.animation.PlaybackManager
 import endorh.unican.gcrv.animation.TimeLine
-import endorh.unican.gcrv.line_algorithms.*
-import endorh.unican.gcrv.line_algorithms.renderers.line.BresenhamRenderer
-import endorh.unican.gcrv.line_algorithms.renderers.line.BresenhamRendererBreadth
-import endorh.unican.gcrv.line_algorithms.renderers.point.CircleAntiAliasPointRenderer
+import endorh.unican.gcrv.scene.*
+import endorh.unican.gcrv.renderers.line.BresenhamRenderer
+import endorh.unican.gcrv.renderers.line.BresenhamRendererBreadth
+import endorh.unican.gcrv.renderers.point.CircleAntiAliasPointRenderer
 import endorh.unican.gcrv.ui2.BufferCanvas
 import endorh.unican.gcrv.windows.*
-import endorh.unican.gcrv.objects.property.AnimProperty
-import endorh.unican.gcrv.objects.Object2D
-import endorh.unican.gcrv.objects.Object2DStack
+import endorh.unican.gcrv.scene.property.AnimProperty
+import endorh.unican.gcrv.renderers.*
+import endorh.unican.gcrv.renderers.spline.VariableInterpolationAntiAliasSplineRenderer
+import endorh.unican.gcrv.scene.objects.GroupObject2D
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,11 +44,20 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
     }
 
     val canvasUpdates = MutableStateFlow(CanvasUpdateEvent())
-    val toolLineStyle = mutableStateOf(LineStyle(Color.WHITE))
+    val cubicSplineRenderingSettings = CubicSplineRenderingSettings(
+        mutableStateOf<CubicSpline2DRenderer>(VariableInterpolationAntiAliasSplineRenderer).affectsCanvas(),
+        mutableStateOf(false).affectsCanvas(),
+        mutableStateOf(Color.WHITE).affectsCanvas(),
+        mutableStateOf(false).affectsCanvas(),
+        mutableStateOf(1F).affectsCanvas(),
+        mutableStateOf(false).affectsCanvas(),
+    )
     val wireframeSettings = WireframeRenderingSettings(
         mutableStateOf<Line2DRenderer>(BresenhamRendererBreadth).affectsCanvas(),
         mutableStateOf(false).affectsCanvas(),
         mutableStateOf(Color.WHITE).affectsCanvas(),
+        mutableStateOf(false).affectsCanvas(),
+        mutableStateOf(1F).affectsCanvas(),
         mutableStateOf(false).affectsCanvas(),
     )
     val pointSettings = PointRenderingSettings(
@@ -62,10 +72,44 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
     val playbackManager = mutableStateOf(PlaybackManager(coroutineContext, timeLine.value))
     val selectedProperties = mutableStateOf<List<AnimProperty<*>>>(emptyList())
 
+    fun loadStack(stack: Object2DStack) {
+        objectStack.objects.clear()
+        for (o in stack.objects)
+            drawObject(o, updateCanvas = false)
+        updateCanvas()
+    }
+
     val objectStack = Object2DStack()
+    val previewStack = Object2DStack()
     val selectedObjects = mutableStateListOf<Object2D>()
 
+    val brushTypes get() = Object2DTypes.filter { it.objectDrawer != null }
+    val brushType = mutableStateOf<Object2DType<*>?>(null)
+    val objectDrawingContext = mutableStateOf<SimpleObjectDrawingContext<*>?>(null).onChange {
+        previewStack.objects.clear()
+        if (it != null) {
+            if (selectedObjects.size != 1 || selectedObjects.firstOrNull() !is GroupObject2D) {
+                selectedObjects.clear()
+                selectedObjects += it.drawnObject
+            }
+            it.onUpdate = { updateCanvas() }
+            previewStack.objects += it.drawnObject
+        }
+        updateCanvas()
+    }
+
+    val gridSize = mutableStateOf(50).affectsCanvas()
+    val gridPass = GridRenderPass2D(gridSize.value)
     val axesPass = AxesRenderPass2D()
+    val geoSplinePass = SplineRenderPass2D(
+        CubicSplineRenderingSettings(
+            mutableStateOf(VariableInterpolationAntiAliasSplineRenderer),
+            mutableStateOf(true),
+            mutableStateOf(Color.GRAY.withAlpha(0.4F)),
+            mutableStateOf(true),
+            mutableStateOf(1F),
+            mutableStateOf(true)
+        ), ignoreTransforms = true)
     val geoWireframePass = WireframeRenderPass2D(
         WireframeRenderingSettings(
             mutableStateOf(BresenhamRenderer),
@@ -82,14 +126,22 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
             mutableStateOf(5),
             mutableStateOf(true),
         ), ignoreTransforms = true)
+    val splinePass = SplineRenderPass2D(cubicSplineRenderingSettings)
     val wireframePass = WireframeRenderPass2D(wireframeSettings)
     val pointPass = PointRenderPass2D(pointSettings)
+    val gizmoPass = GizmoRenderPass2D().also {
+        it.renderedObjects = selectedObjects
+    }
 
-    val pipeline: RenderingPipeline2D = RenderingPipeline2D(objectStack, listOf(
-        axesPass,
-        geoWireframePass, geoPointPass,
-        wireframePass, pointPass
+    val previewPipeline = RenderingPipeline2D(previewStack, listOf(
+        splinePass, wireframePass, pointPass, gizmoPass
     ))
+    val pipeline = RenderingPipeline2D(objectStack, listOf(
+        gridPass, axesPass,
+        geoSplinePass, geoWireframePass, geoPointPass,
+        splinePass, wireframePass, pointPass,
+        gizmoPass
+    ), listOf(previewPipeline))
 
     init {
        for (p in pipeline.renderPasses)
@@ -120,21 +172,31 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
        pipeline.render(canvas)
     }
 
-    fun drawObject(obj: Object2D, update: Boolean = true) {
+    fun drawObject(obj: Object2D, updateCanvas: Boolean = true, updateSelection: Boolean = true) {
         obj.onPropertyChange { updateCanvas() }
         obj.timeLine.value = timeLine.value
         objectStack.objects += obj
-        if (update) updateCanvas()
+        if (updateSelection) {
+            selectedObjects.clear()
+            selectedObjects.add(obj)
+        }
+        if (updateCanvas) updateCanvas()
     }
 
-    fun removeObject(obj: Object2D, update: Boolean = true) {
+    fun removeObject(obj: Object2D, updateCanvas: Boolean = true) {
         objectStack.objects -= obj
-        if (update) updateCanvas()
+        selectedObjects.remove(obj)
+        if (updateCanvas) updateCanvas()
     }
 
-    fun updateCanvas(clear: Boolean = true) = canvasUpdates.update { CanvasUpdateEvent(clear) }
+    fun updateCanvas(clear: Boolean = true) = canvasUpdates.update {
+        CanvasUpdateEvent(clear)
+    }
 
-    class CanvasUpdateEvent(val clear: Boolean = true)
+    // Must NEVER be equal to other event, otherwise they get conflated
+    class CanvasUpdateEvent(val clear: Boolean = true) {
+        fun conflate(other: CanvasUpdateEvent?) = CanvasUpdateEvent(clear || other?.clear ?: false)
+    }
 
     override suspend fun Assets.loadResources(ctx: KoolContext) {
         // exampleImage = loadTexture2d("${SimpleSceneLoader.materialPath}/uv_checker_map.jpg")
@@ -180,11 +242,11 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
         // Spawn initial windows
         val scene = this@EditorScene
         spawnWindow(MenuWindow(scene), "0:row/0:col/0:leaf")
+        spawnWindow(ToolWindow(scene), "0:row/0:col/0:leaf")
         spawnWindow(CanvasWindow(scene), "0:row/1:col/0:leaf")
         spawnWindow(RenderSettingsWindow(scene), "0:row/0:col/1:leaf")
-        spawnWindow(ToolWindow(scene), "0:row/0:col/0:leaf")
-        spawnWindow(TransformWindow(scene), "0:row/0:col/0:leaf")
-        spawnWindow(GeometryTransformWindow(scene), "0:row/0:col/0:leaf")
+        spawnWindow(TransformWindow(scene), "0:row/0:col/1:leaf")
+        spawnWindow(GeometryTransformWindow(scene), "0:row/0:col/1:leaf")
         spawnWindow(TimeLineWindow(scene), "0:row/1:col/1:leaf")
         spawnWindow(OutlinerWindow(scene), "0:row/2:col/0:leaf")
         spawnWindow(InspectorWindow(scene), "0:row/2:col/1:leaf")

@@ -2,26 +2,35 @@ package endorh.unican.gcrv.ui2
 
 import de.fabmax.kool.modules.ui2.*
 
+fun UiScope.FixedSection(title: String, body: UiScope.() -> Unit) {
+   val panel = remember { CollapsablePanel(title, true, false, body) }
+   panel.setup(title, true, false, body)
+   panel()
+}
+
 fun UiScope.Section(title: String, expanded: Boolean = true, body: UiScope.() -> Unit) {
-   val panel = remember { CollapsablePanel(title, expanded, body) }
-   panel.setup(title, expanded, body)
+   val panel = remember { CollapsablePanel(title, expanded, true, body) }
+   panel.setup(title, expanded, true, body)
    panel()
 }
 
 open class CollapsablePanel(
    var title: String,
    var expanded: Boolean,
+   var collapsible: Boolean = true,
    var body: UiScope.() -> Unit
 ) : Composable {
    val isCollapsed = mutableSerialStateOf(!expanded)
    val isHovered = mutableSerialStateOf(false)
 
-   fun setup(title: String, expanded: Boolean, body: UiScope.() -> Unit) {
+   fun setup(title: String, expanded: Boolean, collapsible: Boolean = true, body: UiScope.() -> Unit) {
       this.title = title
-      if (this.expanded != expanded) {
-         isCollapsed.value = !expanded
-         this.expanded = expanded
+      val ex = expanded || !collapsible
+      if (this.expanded != ex) {
+         isCollapsed.value = !ex
+         this.expanded = ex
       }
+      this.collapsible = collapsible
       this.body = body
    }
 
@@ -30,21 +39,27 @@ open class CollapsablePanel(
       Row(Grow.Std) {
          modifier
             .backgroundColor(colors.secondaryVariantAlpha(if (isHovered.use()) 0.75F else 0.5F))
-            .onClick { isCollapsed.toggle() }
             .padding(horizontal = sizes.gap, vertical = sizes.smallGap)
-            .onEnter { isHovered.set(true) }
-            .onExit { isHovered.set(false) }
-
-         Arrow(if (isCollapsed.use()) 0F else 90F) {
+         if (collapsible) {
             modifier
-               .size(sizes.gap * 1.5F, sizes.gap * 1.5F)
-               .margin(horizontal = sizes.gap)
-               .alignY(AlignmentY.Center)
+               .onClick { isCollapsed.toggle() }
+               .onEnter { isHovered.set(true) }
+               .onExit { isHovered.set(false) }
+
+            Arrow(if (isCollapsed.use()) 0F else 90F) {
+               modifier
+                  .size(sizes.gap * 1.5F, sizes.gap * 1.5F)
+                  .margin(horizontal = sizes.gap)
+                  .alignY(AlignmentY.Center)
+            }
          }
+
          Text(title) { }
       }
       if (!isCollapsed.value) {
-         content()
+         Column(Grow.Std) {
+            content()
+         }
       } else {
          divider(colors.secondaryVariantAlpha(0.75F), horizontalMargin = 0.dp, thickness = 1.dp)
       }

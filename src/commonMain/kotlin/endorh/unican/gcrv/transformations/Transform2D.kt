@@ -21,11 +21,12 @@ class Transform2D(
       a*t.e + b*t.f + e, c*t.e + d*t.f + f
    )
 
-   fun inverse() = (a*d - b*c).let { det ->
+   val inverse: Transform2D by lazy {
+      val det = (a*d - b*c)
       if (det == 0F) identity else Transform2D(
-         d/det, -b/det,
-         -c/det, a/det,
-         (b*f - d*e)/det, (c*e - a*f)/det)
+         d / det, -b / det,
+         -c / det, a / det,
+         (b * f - d * e) / det, (c * e - a * f) / det)
    }
 
    fun localize(center: Vec2f) =

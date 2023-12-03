@@ -14,3 +14,6 @@ fun deg(radians: Float) = radians * TO_DEG
 fun ctg(angle: Float) = 1F / tan(angle)
 
 fun Float.roundDecimals(decimals: Int): Float = (this * 10F.pow(decimals)).roundToInt() / 10F.pow(decimals)
+
+val Int.squared get() = this * this
+val Float.squared get() = this * this

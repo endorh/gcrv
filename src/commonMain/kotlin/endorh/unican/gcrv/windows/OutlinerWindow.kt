@@ -3,11 +3,12 @@ package endorh.unican.gcrv.windows
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.EditorScene
-import endorh.unican.gcrv.objects.GroupObject2D
-import endorh.unican.gcrv.objects.Object2D
+import endorh.unican.gcrv.scene.objects.GroupObject2D
+import endorh.unican.gcrv.scene.Object2D
 import endorh.unican.gcrv.ui2.TRANSPARENT
 import endorh.unican.gcrv.util.ModifierState.ctrlPressed
 import endorh.unican.gcrv.util.ModifierState.shiftPressed
+import endorh.unican.gcrv.util.toTitleCase
 import endorh.unican.gcrv.util.towards
 
 class OutlinerWindow(scene: EditorScene) : BaseWindow("Outliner", scene, true) {
@@ -28,8 +29,8 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow("Outliner", scene, true) {
                     val group = GroupObject2D()
                     group.children.addAll(scene.selectedObjects)
                     for (o in scene.selectedObjects)
-                        scene.removeObject(o, update = false)
-                    scene.drawObject(group, update = false)
+                        scene.removeObject(o, updateCanvas = false)
+                    scene.drawObject(group, updateCanvas = false)
                     scene.selectedObjects.clear()
                     scene.selectedObjects += group
                     scene.updateCanvas()
@@ -37,9 +38,8 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow("Outliner", scene, true) {
             }
             Button("Delete") {
                 modifier.margin(start = 4.dp).onClick {
-                    for (o in scene.selectedObjects)
-                        scene.removeObject(o, update = false)
-                    scene.selectedObjects.clear()
+                    for (o in scene.selectedObjects.toList())
+                        scene.removeObject(o, updateCanvas = false)
                     scene.objectStack.objects.firstOrNull()?.let {
                         scene.selectedObjects += it
                     }
@@ -53,7 +53,7 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow("Outliner", scene, true) {
             isScrollableHorizontal = false,
         ) {
             modifier.padding(4.dp)
-            itemsIndexed(scene.objectStack.objects.use()) { idx, obj ->
+            items(scene.objectStack.objects.use()) { obj ->
                 renderItem(obj)
             }
         }
@@ -92,9 +92,10 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow("Outliner", scene, true) {
                             if (obj in selectedObjects) selectedObjects.remove(obj)
                             else selectedObjects.add(obj)
                         } else selectedObjects.add(obj)
+                        scene.updateCanvas()
                     }
                 Text(obj[obj::name].use(surface)) {}
-                Text(obj.type.name) {
+                Text(obj.type.name.toTitleCase()) {
                     modifier.width(Grow.Std).textAlignX(AlignmentX.End).textColor(colors.secondary)
                 }
             }

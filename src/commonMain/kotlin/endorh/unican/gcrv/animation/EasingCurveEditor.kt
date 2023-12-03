@@ -3,8 +3,10 @@ package endorh.unican.gcrv.animation
 import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
-import endorh.unican.gcrv.line_algorithms.CanvasPixelRendererContext
-import endorh.unican.gcrv.line_algorithms.renderers.point.CircleAntiAliasPointRenderer
+import endorh.unican.gcrv.scene.CanvasPixelRendererContext
+import endorh.unican.gcrv.scene.Point2D
+import endorh.unican.gcrv.scene.PointStyle
+import endorh.unican.gcrv.renderers.point.CircleAntiAliasPointRenderer
 import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.*
 import kotlin.math.roundToInt
@@ -109,7 +111,7 @@ class EasingCurveEditorPanel(
             val t = (i.F / 10F * size.F).roundToInt()
             val c = if (i in 1..<10) gridColor else dimGrid
             for (x in 0..<size)
-               canvas.F.C[x, t] = gridColor
+               canvas.F.C[x, t] = c
             if (i in 1..<10) {
                for (y in -size / 2..<0)
                   canvas.F.C[t, y] = dimGrid
@@ -150,8 +152,9 @@ class EasingCurveEditorPanel(
          with (CanvasPixelRendererContext(canvas)) {
             color = controlPointColor
             with(CircleAntiAliasPointRenderer) {
-               render(Vec2i(0, 0), 9)
-               render(Vec2i(size - 1, size - 1), 9)
+               val style = PointStyle(color = controlPointColor, size = 9F)
+               render(Point2D(Vec2i(0, 0), style))
+               render(Point2D(Vec2i(size - 1, size - 1), style))
             }
 
             with (easing) {
@@ -162,9 +165,9 @@ class EasingCurveEditorPanel(
                val v = (c.value * size.F).toVec2i()
                with(CircleAntiAliasPointRenderer) {
                   color = controlPointColor
-                  render(v, 15)
+                  render(Point2D(v, PointStyle(color = color, size = 15F)))
                   color = Color.DARK_GRAY
-                  render(v, 9)
+                  render(Point2D(v, PointStyle(color = color, size = 9F)))
                }
             }
          }
