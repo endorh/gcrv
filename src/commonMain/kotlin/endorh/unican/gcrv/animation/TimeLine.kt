@@ -72,15 +72,16 @@ data class TimeStamp(val frame: Int, val subFrame: Float = 0F) : Comparable<Time
 
       fun fromString(serialized: String): TimeStamp {
          if (':' !in serialized) throw SerializationException("Invalid TimeStamp format: $serialized (missing colon)")
-         try {
-            return serialized.split(":").let {
-               TimeStamp(it[0].toInt(), "0.${it[1]}".toFloat())
-            }
-         } catch (e: NumberFormatException) {
-            throw SerializationException("Invalid TimeStamp format: $serialized", e)
-         }
+         val split = serialized.split(":")
+         if (split.size != 2) throw SerializationException("Invalid TimeStamp format: $serialized (too many colons, expected 1)")
+         val frame = split[0].toIntOrNull() ?: throw SerializationException("Invalid TimeStamp format: $serialized (invalid frame: '${split[0]}')")
+         var subFrameText = split[1]
+         if ('.' !in subFrameText)
+            subFrameText = "0.$subFrameText"
+         val subFrame = subFrameText.toFloatOrNull() ?: throw SerializationException("Invalid TimeStamp format: $serialized (invalid sub-frame: '${split[1]}')")
+         return TimeStamp(frame, subFrame)
       }
-      fun toString(value: TimeStamp) = "${value.frame}:${value.subFrame.roundToString(5)}"
+      fun toString(value: TimeStamp) = "${value.frame}:${value.subFrame.roundToString(5).removePrefix("0.")}"
    }
 }
 

@@ -1,4 +1,4 @@
-package endorh.unican.gcrv.windows
+package endorh.unican.gcrv.windows.editor
 
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
@@ -10,8 +10,9 @@ import endorh.unican.gcrv.util.ModifierState.ctrlPressed
 import endorh.unican.gcrv.util.ModifierState.shiftPressed
 import endorh.unican.gcrv.util.toTitleCase
 import endorh.unican.gcrv.util.towards
+import endorh.unican.gcrv.windows.BaseWindow
 
-class OutlinerWindow(scene: EditorScene) : BaseWindow("Outliner", scene, true) {
+class OutlinerWindow(scene: EditorScene) : BaseWindow<EditorScene>("Outliner", scene, true) {
 
     init {
         windowDockable.setFloatingBounds(width = Dp(150F), height = Dp(400F))
@@ -27,8 +28,9 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow("Outliner", scene, true) {
             Button("Group") {
                 modifier.onClick {
                     val group = GroupObject2D()
-                    group.children.addAll(scene.selectedObjects)
-                    for (o in scene.selectedObjects)
+                    val selected = scene.selectedObjects.toList()
+                    group.children.addAll(selected)
+                    for (o in selected)
                         scene.removeObject(o, updateCanvas = false)
                     scene.drawObject(group, updateCanvas = false)
                     scene.selectedObjects.clear()

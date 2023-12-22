@@ -10,17 +10,12 @@ import endorh.unican.gcrv.renderers.point.CircleAntiAliasPointRenderer
 import endorh.unican.gcrv.renderers.point.SquarePointRenderer
 import endorh.unican.gcrv.scene.*
 import endorh.unican.gcrv.scene.ControlPointGizmo.ControlPointGizmoStyle
-import endorh.unican.gcrv.scene.property.Vec2fProperty
-import endorh.unican.gcrv.scene.property.cubicSplineStyle
-import endorh.unican.gcrv.scene.property.pointStyle
-import endorh.unican.gcrv.scene.property.priority
+import endorh.unican.gcrv.scene.ControlPointGizmo.GizmoDragListener
+import endorh.unican.gcrv.scene.property.*
 import endorh.unican.gcrv.ui2.TRANSPARENT
-import endorh.unican.gcrv.util.minus
-import endorh.unican.gcrv.util.plus
-import endorh.unican.gcrv.util.times
-import endorh.unican.gcrv.util.toVec2i
+import endorh.unican.gcrv.util.*
 
-class CubicSplineObject2D(
+open class CubicSplineObject2D(
    points: List<Vec2f> = emptyList(),
    style: CubicSplineStyle = CubicSplineStyle(Color.WHITE),
    startStyle: PointStyle = PointStyle(Color.WHITE, 5F),
@@ -37,20 +32,25 @@ class CubicSplineObject2D(
    override val renderers: List<Renderer2D> = listOf(Renderer(this))
 
    init {
-      controlPoints.onChange { _gizmos = null }
+      controlPoints.onChange {
+         _gizmos?.forEach {
+            if (it is ControlPointGizmo) (it.onChange as? SplineGizmoDragListener)?.invalidate()
+         }
+         _gizmos = null
+      }
    }
    private var _gizmos: List<Gizmo2D>? = null
    override val gizmos: List<Gizmo2D> get() {
       _gizmos?.let { return it }
-      return (listOf(drawGizmo {
+      return (listOf(drawGizmo { transform ->
          val ps = controlPoints.entries
          val style = style.polygonStyle
-         renderLine(Line2D(ps[0].value.toVec2i(), ps[1].value.toVec2i(), style))
+         renderLine(Line2D((transform * ps[0].value).toVec2i(), (transform * ps[1].value).toVec2i(), style))
          for (i in 2..ps.size - 2 step 3) {
-            val mid = ps[i + 1].value.toVec2i()
-            renderLine(Line2D(ps[i].value.toVec2i(), mid, style))
+            val mid = (transform * ps[i + 1].value).toVec2i()
+            renderLine(Line2D((transform * ps[i].value).toVec2i(), mid, style))
             if (i < ps.size - 2)
-            renderLine(Line2D(mid, ps[i+2].value.toVec2i(), style))
+            renderLine(Line2D(mid, (transform * ps[i+2].value).toVec2i(), style))
          }
       }) + controlPoints.entries.mapIndexed { i, p ->
          gizmo(p, when (i) {
@@ -58,8 +58,85 @@ class CubicSplineObject2D(
             controlPoints.size - controlPoints.size % 3 -> endGizmoStyle
             else -> if (i > controlPoints.size - controlPoints.size % 3)
                outGizmoStyle else if (i % 3 == 0) midGizmoStyle else controlGizmoStyle
-         })
+         }, SplineGizmoDragListener(i, controlPoints))
       }).also { _gizmos = it }
+   }
+
+   protected open class SplineGizmoDragListener(
+      val idx: Int, val controlPoints: PropertyList<AnimPropertyData<Vec2f>, Vec2fProperty>
+   ) : GizmoDragListener {
+      protected var valid = true
+      fun invalidate() {
+         valid = false
+         ModifierState.removeListener(modifierListener)
+      }
+      protected val modifierListener = ModifierChangeListener {
+         onDrag(lastPos)
+      }
+      protected val endIndex = controlPoints.size - controlPoints.size % 3
+      init {
+         if (idx > endIndex) invalidate()
+      }
+      lateinit var initPos: Vec2f
+      lateinit var initPositions: List<Vec2f>
+      var connected: Boolean = false
+      lateinit var lastPos: Vec2f
+      override fun onDragStart(pos: Vec2f) {
+         if (!valid) return
+         initPos = pos
+         connected = controlPoints[0].value.sqrDistance(controlPoints[endIndex].value) < 16F
+         if (connected) {
+            if (idx == 0) controlPoints[endIndex].value = controlPoints[0].value
+            if (idx == endIndex) controlPoints[0].value = controlPoints[endIndex].value
+         }
+         initPositions = controlPoints.entries.map { it.value }
+         lastPos = pos
+         ModifierState.addListener(modifierListener)
+      }
+      override fun onDrag(pos: Vec2f) {
+         if (!valid) return
+         if (ModifierState.ctrlPressed) {
+            controlPoints.entries.forEachIndexed { i, p ->
+               if (p.value != initPositions[i])
+                  p.value = initPositions[i]
+            }
+            controlPoints[idx].value = pos
+         } else if (!ModifierState.ctrlPressed) {
+            val delta = pos - initPos
+            fun dragPoints(vararg indices: Int) = indices.forEach {
+               controlPoints[it].value = initPositions[it] + delta
+            }
+            if (idx == 0) {
+               dragPoints(*if (connected) intArrayOf(0, 1, endIndex - 1, endIndex) else intArrayOf(0, 1))
+            } else if (idx == endIndex) {
+               dragPoints(*if (connected) intArrayOf(endIndex - 1, endIndex, 0, 1) else intArrayOf(endIndex - 1, endIndex))
+            } else if (idx % 3 == 0) dragPoints(idx - 1, idx, idx + 1) else {
+               controlPoints[idx].value = pos
+               val o = if (idx % 3 == 1) idx - 2 else idx + 2
+               if (o < 0) {
+                  if (connected) {
+                     controlPoints[endIndex].value = initPositions[0]
+                     controlPoints[endIndex - 1].value = initPositions[endIndex] * 2F - pos
+                  }
+               } else if (o > endIndex) {
+                  if (connected) {
+                     controlPoints[0].value = initPositions[endIndex]
+                     controlPoints[1].value = initPositions[0] * 2F - pos
+                  }
+               } else {
+                  val pivot = if (idx % 3 == 1) idx - 1 else idx + 1
+                  controlPoints[o].value = initPositions[pivot] * 2F - pos
+               }
+            }
+         }
+         lastPos = pos
+      }
+      override fun onDragEnd(pos: Vec2f) {
+         if (!valid) return
+         ModifierState.removeListener(modifierListener)
+         lastPos = pos
+         initPositions = emptyList()
+      }
    }
 
    protected open val startGizmoStyle = ControlPointGizmoStyle(

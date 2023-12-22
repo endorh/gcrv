@@ -64,7 +64,7 @@ abstract class AnimProperty<T>(defValue: T, val serializer: KSerializer<T>) : Mu
    fun insertKeyFrame(time: TimeStamp) {
       val ref = keyFrames.ceilingKeyFrame(time) ?: keyFrames.floorKeyFrame(time)
       val interpolator = ref?.driver ?: defaultInterpolator
-      val easing = ref?.easing ?: Easing.CubicBezier.Linear()
+      val easing = ref?.easing?.copy() ?: Easing.CubicBezier.Linear()
       keyFrames.set(KeyFrame(time, valueForTime(time), interpolator, easing))
       stateChanged()
    }

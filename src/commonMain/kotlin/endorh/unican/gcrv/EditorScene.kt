@@ -11,7 +11,6 @@ import de.fabmax.kool.modules.ui2.docking.Dock
 import de.fabmax.kool.modules.ui2.docking.UiDockable
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Color
-import de.fabmax.kool.util.launchDelayed
 import endorh.unican.gcrv.animation.PlaybackManager
 import endorh.unican.gcrv.animation.TimeLine
 import endorh.unican.gcrv.scene.*
@@ -24,13 +23,14 @@ import endorh.unican.gcrv.scene.property.AnimProperty
 import endorh.unican.gcrv.renderers.*
 import endorh.unican.gcrv.renderers.spline.VariableInterpolationAntiAliasSplineRenderer
 import endorh.unican.gcrv.scene.objects.GroupObject2D
+import endorh.unican.gcrv.windows.editor.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.coroutines.CoroutineContext
 
-class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
+class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope {
     override val coroutineContext: CoroutineContext = Dispatchers.Default
 
     val canvasSize = mutableStateOf(Vec2i(720, 480))
@@ -148,7 +148,7 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
            p.enabled.affectsCanvas()
     }
 
-    val selectedColors = mutableStateOf(Colors.darkColors(
+    override val selectedColors = mutableStateOf(Colors.darkColors(
         Color("55A4CDFF"),
         Color("789DA6F0"),
         Color("6797A4FF"),
@@ -159,12 +159,10 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
         Color("FFFFFFFF"),
         Color("D4DBDDFF"),
     )).onChange { dock.dockingSurface.colors = it }
-    val selectedUiSize = mutableStateOf(Sizes.medium)
-
-    val dock = Dock()
-    val subWindows = mutableListOf<BaseWindow>()
-
-    private val windowSpawnLocation = MutableVec2f(320F, 64F)
+    override val selectedUiSize = mutableStateOf(Sizes.medium)
+    override val dock = Dock()
+    override val sceneWindows = mutableListOf<BaseWindow<*>>()
+    override val windowSpawnLocation = MutableVec2f(320F, 32F)
 
     // var exampleImage: Texture2d? = null
 
@@ -194,9 +192,7 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
     }
 
     // Must NEVER be equal to other event, otherwise they get conflated
-    class CanvasUpdateEvent(val clear: Boolean = true) {
-        fun conflate(other: CanvasUpdateEvent?) = CanvasUpdateEvent(clear || other?.clear ?: false)
-    }
+    class CanvasUpdateEvent(val clear: Boolean = true)
 
     override suspend fun Assets.loadResources(ctx: KoolContext) {
         // exampleImage = loadTexture2d("${SimpleSceneLoader.materialPath}/uv_checker_map.jpg")
@@ -241,7 +237,7 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
 
         // Spawn initial windows
         val scene = this@EditorScene
-        spawnWindow(MenuWindow(scene), "0:row/0:col/0:leaf")
+        spawnWindow(EditorMenuWindow(scene), "0:row/0:col/0:leaf")
         spawnWindow(ToolWindow(scene), "0:row/0:col/0:leaf")
         spawnWindow(CanvasWindow(scene), "0:row/1:col/0:leaf")
         spawnWindow(RenderSettingsWindow(scene), "0:row/0:col/1:leaf")
@@ -250,34 +246,5 @@ class EditorScene : SimpleScene("Line Algorithms"), CoroutineScope {
         spawnWindow(TimeLineWindow(scene), "0:row/1:col/1:leaf")
         spawnWindow(OutlinerWindow(scene), "0:row/2:col/0:leaf")
         spawnWindow(InspectorWindow(scene), "0:row/2:col/1:leaf")
-    }
-
-    fun spawnWindow(window: BaseWindow, dockPath: String? = null) {
-        subWindows += window
-
-        dock.addDockableSurface(window.windowDockable, window.windowSurface)
-        dockPath?.let { dock.getLeafAtPath(it)?.dock(window.windowDockable) }
-
-        window.windowDockable.setFloatingBounds(Dp(windowSpawnLocation.x), Dp(windowSpawnLocation.y))
-        windowSpawnLocation.x += 32F
-        windowSpawnLocation.y += 32F
-
-        if (windowSpawnLocation.y > 480F) {
-            windowSpawnLocation.y -= 416
-            windowSpawnLocation.x -= 384
-            if (windowSpawnLocation.x > 480F)
-                windowSpawnLocation.x = 320F
-        }
-
-        launchDelayed(1) {
-            window.windowSurface.isFocused.set(true)
-        }
-    }
-
-    fun closeWindow(window: BaseWindow, ctx: KoolContext) {
-        dock.removeDockableSurface(window.windowSurface)
-        subWindows -= window
-        window.onClose()
-        window.windowSurface.dispose(ctx)
     }
 }

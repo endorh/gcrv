@@ -9,14 +9,15 @@ import de.fabmax.kool.modules.ui2.mutableStateOf
 import endorh.unican.gcrv.animation.TimeLine
 import endorh.unican.gcrv.renderers.*
 import endorh.unican.gcrv.scene.ControlPointGizmo.ControlPointGizmoStyle
+import endorh.unican.gcrv.scene.ControlPointGizmo.GizmoDragListener
 import endorh.unican.gcrv.scene.objects.CubicSplineObject2D
-import endorh.unican.gcrv.scene.property.*
 import endorh.unican.gcrv.scene.objects.GroupObject2D
 import endorh.unican.gcrv.scene.objects.LineObject2D
 import endorh.unican.gcrv.scene.objects.PointObject2D
+import endorh.unican.gcrv.scene.property.*
+import endorh.unican.gcrv.serialization.SavableSerializer
 import endorh.unican.gcrv.transformations.Transform2D
 import endorh.unican.gcrv.transformations.TransformProperty
-import endorh.unican.gcrv.serialization.SavableSerializer
 import endorh.unican.gcrv.ui2.MutableSerialStateList
 import endorh.unican.gcrv.util.toTitleCase
 import endorh.unican.gcrv.util.toVec2f
@@ -41,6 +42,19 @@ class Object2DStack {
       fun render(o: Object2D) {
          if (!ignoreTransforms) collector.push(o.aggregatedTransform)
          collector.accept(o.collider to o)
+         for (child in o.children) render(child)
+         if (!ignoreTransforms) collector.pop()
+      }
+      for (o in objects) render(o)
+      return collector.collected
+   }
+
+   fun collectGizmos(selected: Collection<Object2D>? = null, ignoreTransforms: Boolean = false): List<TransformedGizmo> {
+      val collector = TransformedGizmoPassInputScopeImpl()
+      fun render(o: Object2D) {
+         if (!ignoreTransforms) collector.push(o.aggregatedTransform)
+         if (selected == null || o in selected)
+            collector.accept(o.gizmos)
          for (child in o.children) render(child)
          if (!ignoreTransforms) collector.pop()
       }
@@ -106,14 +120,25 @@ abstract class Object2D(val type: Object2DType<out Object2D>) : PropertyHolder, 
          geometricProperties.add(it)
       }
 
-
-   protected fun gizmo(prop: KMutableProperty0<Vec2f>, style: ControlPointGizmoStyle = ControlPointGizmoStyle()) =
-      ControlPointGizmo(prop::get, prop::set, style)
-   protected fun gizmo(prop: KProperty0<MutableList<Vec2f>>, i: Int, style: ControlPointGizmoStyle = ControlPointGizmoStyle()) =
-      ControlPointGizmo({ prop.get()[i] }, { prop.get()[i] = it }, style)
-   protected fun gizmo(prop: Vec2fProperty, style: ControlPointGizmoStyle = ControlPointGizmoStyle()) =
-      ControlPointGizmo({ prop.value }, { prop.value = it }, style)
-   protected fun drawGizmo(gizmo: DrawGizmo) = gizmo
+   protected fun gizmo(
+      prop: KMutableProperty0<Vec2f>, style: ControlPointGizmoStyle = ControlPointGizmoStyle(),
+      onDrag: GizmoDragListener? = null
+   ) = ControlPointGizmo(prop::get, style, GizmoDragListener { pos ->
+      prop.set(pos)
+   }.redirect(onDrag))
+   protected fun gizmo(
+      prop: KProperty0<MutableList<Vec2f>>, i: Int, style: ControlPointGizmoStyle = ControlPointGizmoStyle(),
+      onDrag: GizmoDragListener? = null
+   ) = ControlPointGizmo({ prop.get()[i] }, style, GizmoDragListener {
+      prop.get()[i] = it
+   }.redirect(onDrag))
+   protected fun gizmo(
+      prop: Vec2fProperty, style: ControlPointGizmoStyle = ControlPointGizmoStyle(),
+      onDrag: GizmoDragListener? = null
+   ) = ControlPointGizmo({ prop.value }, style, GizmoDragListener {
+      prop.value = it
+   }.redirect(onDrag))
+   protected fun drawGizmo(renderer: PixelRendererContext.(Transform2D) -> Unit) = DrawGizmo(renderer)
 
    fun use(surface: UiSurface) {
       properties.allProperties.forEach { it.use(surface) }

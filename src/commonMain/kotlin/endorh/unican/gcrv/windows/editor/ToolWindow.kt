@@ -1,13 +1,12 @@
-package endorh.unican.gcrv.windows
+package endorh.unican.gcrv.windows.editor
 
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
-import endorh.unican.gcrv.renderers.OptionPicker
 import endorh.unican.gcrv.renderers.OptionalOptionPicker
-import endorh.unican.gcrv.scene.LineStyleEditor
 import endorh.unican.gcrv.ui2.FixedSection
+import endorh.unican.gcrv.windows.BaseWindow
 
-class ToolWindow(scene: EditorScene) : BaseWindow("Tool", scene, true) {
+class ToolWindow(scene: EditorScene) : BaseWindow<EditorScene>("Tool", scene, true) {
     init {
         windowDockable.setFloatingBounds(width = Dp(250f), height = Dp(300f))
     }

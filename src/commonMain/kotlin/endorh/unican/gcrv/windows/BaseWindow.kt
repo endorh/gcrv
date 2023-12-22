@@ -3,9 +3,10 @@ package endorh.unican.gcrv.windows
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.modules.ui2.docking.UiDockable
 import endorh.unican.gcrv.EditorScene
+import endorh.unican.gcrv.WindowScene
 import kotlinx.coroutines.*
 
-abstract class BaseWindow(name: String, val scene: EditorScene, isClosable: Boolean = true) : CoroutineScope {
+abstract class BaseWindow<out Scene: WindowScene>(name: String, val scene: Scene, isClosable: Boolean = true) : CoroutineScope {
     override val coroutineContext = scene.coroutineContext
     val windowDockable = UiDockable(name, scene.dock)
 

@@ -1,15 +1,16 @@
-package endorh.unican.gcrv.windows
+package endorh.unican.gcrv.windows.editor
 
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
 import endorh.unican.gcrv.scene.Object2DStack
 import endorh.unican.gcrv.serialization.JsonFormat
 import endorh.unican.gcrv.ui2.*
+import endorh.unican.gcrv.windows.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 
-class MenuWindow(scene: EditorScene) : BaseWindow("Menu", scene, false) {
+class EditorMenuWindow(scene: EditorScene) : BaseWindow<EditorScene>("Menu", scene, false) {
 
     init {
         windowDockable.setFloatingBounds(width = Dp(250f))
@@ -27,6 +28,7 @@ class MenuWindow(scene: EditorScene) : BaseWindow("Menu", scene, false) {
                     val selectedFile = remember { mutableStateOf<FileReadHandle?>(null) }
                     FilePicker {
                         modifier.width(Grow.Std).margin(2.dp)
+                            .fileFilters(FileFilter.JSON)
                         onFileChosen {
                             selectedFile.value = it
                         }
@@ -57,6 +59,7 @@ class MenuWindow(scene: EditorScene) : BaseWindow("Menu", scene, false) {
                     modifier.padding(8.dp)
                     FileSaver {
                         modifier.width(Grow.Std).margin(2.dp)
+                            .fileFilters(FileFilter.JSON)
                             .suggestedFileName("scene.json")
                         onFileTextRequested {
                             println("Generating saved file chosen")
@@ -164,9 +167,9 @@ class MenuWindow(scene: EditorScene) : BaseWindow("Menu", scene, false) {
         }
     }
 
-    private fun <T: BaseWindow> launchOrBringToTop(multiAllowed: Boolean, windowClass: KClass<T>, factory: () -> T) {
+    private fun <T: BaseWindow<*>> launchOrBringToTop(multiAllowed: Boolean, windowClass: KClass<T>, factory: () -> T) {
         if (!multiAllowed) {
-            val existing = scene.subWindows.find { it::class == windowClass }
+            val existing = scene.sceneWindows.find { it::class == windowClass }
             if (existing != null) {
                 existing.windowSurface.isFocused.set(true)
                 return
@@ -174,7 +177,7 @@ class MenuWindow(scene: EditorScene) : BaseWindow("Menu", scene, false) {
         }
         scene.spawnWindow(factory())
     }
-    private inline fun <reified T: BaseWindow> launchOrBringToTop(multiAllowed: Boolean, noinline factory: () -> T) =
+    private inline fun <reified T: BaseWindow<*>> launchOrBringToTop(multiAllowed: Boolean, noinline factory: () -> T) =
         launchOrBringToTop(multiAllowed, T::class, factory)
 
     private fun ButtonScope.launcherButtonStyle(tooltip: String) {

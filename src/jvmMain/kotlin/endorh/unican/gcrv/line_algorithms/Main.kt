@@ -18,7 +18,10 @@ fun main() = KoolApplication(
     // SimpleSceneLoader.setProperty("assets.hdri", "hdri")
     // SimpleSceneLoader.setProperty("assets.materials", "materials")
     // SimpleSceneLoader.setProperty("assets.models", "models")
-    launchSceneLoader("line-algorithms", ctx, loadPhysics = false) {
+    var scene: String
+    scene = "line-algorithms"
+    // scene = "fractals"
+    launchSceneLoader(scene, ctx, loadPhysics = false) {
         ctx as Lwjgl3Context
         val window = ctx.renderBackend.glfwWindow
         window.isVisible = true

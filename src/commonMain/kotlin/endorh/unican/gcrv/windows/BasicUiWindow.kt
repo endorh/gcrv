@@ -3,8 +3,9 @@ package endorh.unican.gcrv.windows
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.EditorScene
+import endorh.unican.gcrv.WindowScene
 
-class BasicUiWindow(scene: EditorScene) : BaseWindow("Demo Window", scene) {
+class BasicUiWindow(scene: WindowScene) : BaseWindow<WindowScene>("Demo Window", scene) {
 
     init {
         windowDockable.setFloatingBounds(width = Dp(500f), height = Dp(700f))

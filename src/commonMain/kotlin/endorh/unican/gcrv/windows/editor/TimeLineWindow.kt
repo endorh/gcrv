@@ -1,4 +1,4 @@
-package endorh.unican.gcrv.windows
+package endorh.unican.gcrv.windows.editor
 
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
@@ -11,8 +11,9 @@ import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.I
 import endorh.unican.gcrv.util.pad
 import endorh.unican.gcrv.util.padLength
+import endorh.unican.gcrv.windows.BaseWindow
 
-class TimeLineWindow(scene: EditorScene) : BaseWindow("Timeline", scene, true) {
+class TimeLineWindow(scene: EditorScene) : BaseWindow<EditorScene>("Timeline", scene, true) {
 
    init {
       windowDockable.setFloatingBounds(width = Dp(450F), height = Dp(150F))
@@ -74,8 +75,12 @@ class TimeLineWindow(scene: EditorScene) : BaseWindow("Timeline", scene, true) {
             focusedProperty.use()?.let { p ->
                @Suppress("UNCHECKED_CAST")
                val keyFrames = p.keyFrames as KeyFrameList<Any>
-               keyFrames.ceilingKeyFrame(timeLine.currentTime.value)?.let { kf ->
-                  EasingCurvePopupEditor(kf.easing, { keyFrames.set(kf.copy(easing = it)) }) {
+               keyFrames.ceilingKeyFrame(timeLine.currentTime.use())?.let { kf ->
+                  EasingCurvePopupEditor(kf.easing, {
+                     keyFrames.ceilingKeyFrame(timeLine.currentTime.use())?.let { kf ->
+                        keyFrames.set(kf.copy(easing = it))
+                     }
+                  }, hideOnClickOutside = false) {
                      modifier.margin(4.dp).width(Grow(1F, max=120.dp))
                   }
                }
@@ -120,15 +125,6 @@ class TimeLineWindow(scene: EditorScene) : BaseWindow("Timeline", scene, true) {
             }
          }
       }
-
-      // TimeLineEditor(timeLine, "timeLine") {
-      //    modifier.margin(4.dp)
-      //       .fpsGrid(fps.use())
-      //       .snapToGrid(snapToGrid.use())
-      //    selectedProperties.use().firstOrNull()?.let {
-      //       modifier.keyFrames(it.keyFrames.allKeyFrames.toList())
-      //    } ?: modifier.keyFrames(emptyList())
-      // }
 
       // ScrollArea(withHorizontalScrollbar = false) {
       //    modifier.background(RectBackground(colors.background)).width(Grow.Std).height(Grow.Std)

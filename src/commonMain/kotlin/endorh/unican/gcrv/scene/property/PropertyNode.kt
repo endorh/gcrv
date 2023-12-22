@@ -36,7 +36,7 @@ sealed interface PropertyMap : Map<String, PropertyNode<*>> {
       try {
          for ((name, p) in serialized) {
             p as PropertyNode<Any?>
-            this[name]?.let { if (p != it) p.load(it.save()) }
+            (this[name] as? PropertyNode<Any?>)?.let { if (p != it) it.load(p.save()) }
          }
       } catch (e: ClassCastException) {
          throw SerializationException("Invalid property data", e)
@@ -94,11 +94,11 @@ sealed interface PropertyMap : Map<String, PropertyNode<*>> {
          }
       }
 
-      override fun deserialize(decoder: Decoder) = decoder.decodeStructure(descriptor) {
-         decodeProperties(descriptor, 0) {
-            throw SerializationException("Unexpected serial index: $it")
+      override fun deserialize(decoder: Decoder): PropertyMap = decoder.decodeStructure(descriptor) {
+            decodeProperties(descriptor, 0) {
+               throw SerializationException("Unexpected serial index: $it")
+            }
          }
-      }
    }
 }
 

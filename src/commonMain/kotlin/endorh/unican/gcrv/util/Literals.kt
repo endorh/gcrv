@@ -1,5 +1,9 @@
 package endorh.unican.gcrv.util
 
+import de.fabmax.kool.modules.ksl.lang.KslScalarExpression
+import de.fabmax.kool.modules.ksl.lang.KslTypeInt1
+import de.fabmax.kool.modules.ksl.lang.KslTypeUint1
+import de.fabmax.kool.modules.ksl.lang.toFloat1
 import de.fabmax.kool.util.Color
 import kotlin.jvm.JvmInline
 
@@ -54,8 +58,18 @@ inline val Color.RGBA: RGBA get() = ((r * 255F).toUInt() and 0xFFu shl 24 or
   ((b * 255F).toUInt() and 0xFFu shl 8) or
   ((a * 255F).toUInt() and 0xFFu)).RGBA
 
+inline val Int.U get() = toUInt()
+inline val Int.L get() = toLong()
+inline val Int.UL get() = toULong()
+inline val Long.U get() = toULong()
+inline val Long.I get() = toInt()
+inline val Long.UI get() = toUInt()
+
 inline val UInt.I get() = toInt()
+inline val UInt.L get() = toLong()
+inline val UInt.UL get() = toULong()
 inline val ULong.I get() = toInt()
+inline val ULong.UI get() = toUInt()
 inline val ULong.L get() = toLong()
 
 inline val Boolean.B get() = if (this) 1.B else 0.B
@@ -64,9 +78,6 @@ inline val Boolean.S get() = if (this) 1.S else 0.S
 inline val Boolean.US get() = if (this) 1U.S else 0U.S
 inline val Boolean.I get() = if (this) 1 else 0
 inline val Boolean.UI get() = if (this) 1U else 0U
-
-inline val Int.U get() = toUInt()
-inline val Long.U get() = toULong()
 
 inline val Int.F get() = toFloat()
 inline val UInt.F get() = toFloat()
@@ -89,3 +100,7 @@ inline val Double.UI get() = toUInt()
 inline val Double.L get() = toLong()
 inline val Double.UL get() = toULong()
 inline val Double.F get() = toFloat()
+
+
+inline val KslScalarExpression<KslTypeUint1>.F get() = toFloat1()
+// inline val KslScalarExpression<KslTypeInt1>.F get() = toFloat1()

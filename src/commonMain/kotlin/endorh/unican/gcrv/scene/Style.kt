@@ -1,6 +1,7 @@
 package endorh.unican.gcrv.scene
 
 import de.fabmax.kool.modules.ui2.*
+import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.renderers.*
 import endorh.unican.gcrv.ui2.IntField
 import endorh.unican.gcrv.ui2.LabeledColorField
@@ -53,7 +54,7 @@ class PointStyleProperty(value: PointStyle = PointStyle()) : CompoundAnimPropert
 
 class CubicSplineStyleProperty(
    style: CubicSplineStyle = CubicSplineStyle(),
-   polygon: LineStyle = LineStyle(),
+   polygon: LineStyle = LineStyle(Color.GRAY),
    start: PointStyle = PointStyle(),
    mid: PointStyle = PointStyle(),
    end: PointStyle = PointStyle()

@@ -35,9 +35,10 @@ interface WireframeRenderPassInputScope : RenderPassInputScope<Line2D>
 interface PointRenderPassInputScope : RenderPassInputScope<Point2D>
 interface CubicSplineRenderPassInputScope : RenderPassInputScope<CubicSpline2D>
 interface TaggedColliderPassInputScope<T> : RenderPassInputScope<Pair<Collider, T>>
+interface TransformedGizmoPassInputScope : RenderPassInputScope<Gizmo2D>
 
-abstract class RenderPassInputScopeImpl<Data> : RenderPassInputScope<Data> {
-   val collected = mutableListOf<Data>()
+abstract class RenderPassInputScopeImpl<Data, Transformed> : RenderPassInputScope<Data> {
+   val collected = mutableListOf<Transformed>()
    val stack = Transform2DStack()
 
    override fun accept(data: Data) {
@@ -49,22 +50,25 @@ abstract class RenderPassInputScopeImpl<Data> : RenderPassInputScope<Data> {
    override fun accept(vararg data: Data) {
       data.mapTo(collected) { transform(it) }
    }
-   abstract fun transform(o: Data): Data
+   abstract fun transform(o: Data): Transformed
    override fun push(transform: Transform2D) = stack.push(transform)
    override fun pop() = stack.pop()
 }
-class WireframePassInputScopeImpl : RenderPassInputScopeImpl<Line2D>(), WireframeRenderPassInputScope {
+class WireframePassInputScopeImpl : RenderPassInputScopeImpl<Line2D, Line2D>(), WireframeRenderPassInputScope {
    override fun transform(o: Line2D) = Line2D(
       stack.transform.transform(o.start), stack.transform.transform(o.end), o.style)
 }
-class PointPassInputScopeImpl : RenderPassInputScopeImpl<Point2D>(), PointRenderPassInputScope {
+class PointPassInputScopeImpl : RenderPassInputScopeImpl<Point2D, Point2D>(), PointRenderPassInputScope {
    override fun transform(o: Point2D) = Point2D(stack.transform.transform(o.pos), o.style)
 }
-class CubicSplinePassInputScopeImpl : RenderPassInputScopeImpl<CubicSpline2D>(), CubicSplineRenderPassInputScope {
+class CubicSplinePassInputScopeImpl : RenderPassInputScopeImpl<CubicSpline2D, CubicSpline2D>(), CubicSplineRenderPassInputScope {
    override fun transform(o: CubicSpline2D) = o.transform(stack.transform)
 }
-class TaggedColliderPassInputScopeImpl<T> : RenderPassInputScopeImpl<Pair<Collider, T>>(), TaggedColliderPassInputScope<T> {
+class TaggedColliderPassInputScopeImpl<T> : RenderPassInputScopeImpl<Pair<Collider, T>, Pair<TransformedCollider, T>>(), TaggedColliderPassInputScope<T> {
    override fun transform(o: Pair<Collider, T>) = TransformedCollider(o.first, stack.transform) to o.second
+}
+class TransformedGizmoPassInputScopeImpl : RenderPassInputScopeImpl<Gizmo2D, TransformedGizmo>(), TransformedGizmoPassInputScope {
+   override fun transform(o: Gizmo2D) = TransformedGizmo(o, stack.transform)
 }
 
 data class CubicSplineRenderingSettings(
@@ -228,15 +232,12 @@ class GridRenderPass2D(var gridSize: Int, var color: Color = Color.DARK_GRAY) : 
    }
 }
 
-class GizmoRenderPass2D : RenderPass2D {
+class GizmoRenderPass2D(val ignoreTransforms: Boolean = false) : RenderPass2D {
    override val enabled = mutableStateOf(true)
-   var renderedObjects: List<Object2D> = emptyList()
+   var renderedObjects: Collection<Object2D> = emptySet()
 
    override fun render(canvas: BufferCanvas, objectStack: Object2DStack) {
-      for (o in renderedObjects) renderGizmo(canvas, o)
-   }
-   fun renderGizmo(canvas: BufferCanvas, obj: Object2D) {
-      for (gizmo in obj.gizmos) gizmo.render(canvas)
+      objectStack.collectGizmos(renderedObjects, ignoreTransforms).forEach { it.render(canvas) }
    }
 }
 

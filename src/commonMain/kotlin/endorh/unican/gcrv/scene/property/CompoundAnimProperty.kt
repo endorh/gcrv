@@ -39,5 +39,7 @@ abstract class CompoundAnimProperty : PropertyHolder, PropertyNode<PropertyMap> 
 
    override fun save() = properties
    override fun load(data: PropertyMap) = properties.load(data)
-   override val saveSerializer by lazy { properties.createSerializer(this::class.simpleName!!) }
+   override val saveSerializer by lazy {
+      properties.createSerializer(this::class.simpleName!!)
+   }
 }

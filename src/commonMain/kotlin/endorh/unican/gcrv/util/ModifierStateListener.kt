@@ -27,7 +27,12 @@ internal object ModifierStateListener : InputStack.KeyboardListener {
    }
 }
 
+fun interface ModifierChangeListener {
+   fun onModifierChange()
+}
 object ModifierState {
+   private val onModifierChange = mutableListOf<ModifierChangeListener>()
+
    private var lockedCtrl = false
    private var lockedAlt = false
    private var lockedShift = false
@@ -71,5 +76,12 @@ object ModifierState {
          InputStack.handlerStack.remove(handler)
          InputStack.handlerStack.add(handler)
       }
+   }
+
+   fun addListener(listener: ModifierChangeListener) {
+      onModifierChange += listener
+   }
+   fun removeListener(listener: ModifierChangeListener) {
+      onModifierChange -= listener
    }
 }

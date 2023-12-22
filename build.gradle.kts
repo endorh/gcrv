@@ -2,8 +2,8 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
-    kotlin("multiplatform") version "1.9.10"
-    kotlin("plugin.serialization") version "1.9.10"
+    kotlin("multiplatform") version "1.9.21"
+    kotlin("plugin.serialization") version "1.9.21"
 }
 
 repositories {
@@ -14,6 +14,8 @@ repositories {
 kotlin {
     jvm {
         jvmToolchain(11)
+
+        @Suppress("OPT_IN_USAGE")
         mainRun {
             mainClass.set("endorh.unican.gcrv.line_algorithms.MainKt")
         }
@@ -22,12 +24,12 @@ kotlin {
         binaries.executable()
         browser {
             @OptIn(ExperimentalDistributionDsl::class)
-            distribution(Action {
+            distribution {
                 outputDirectory.set(File("${rootDir}/dist/${project.name}"))
-            })
-            commonWebpackConfig(Action {
+            }
+            commonWebpackConfig {
                 mode = KotlinWebpackConfig.Mode.DEVELOPMENT
-            })
+            }
         }
     }
 
@@ -46,6 +48,8 @@ kotlin {
             dependencies {
                 implementation("de.fabmax.kool:kool-core:$koolVersion")
                 implementation("de.fabmax.kool:kool-physics:$koolVersion")
+
+                implementation("com.ionspin.kotlin:bignum:0.3.8")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
                 implementation("org.jetbrains.kotlin:kotlin-scripting-common")

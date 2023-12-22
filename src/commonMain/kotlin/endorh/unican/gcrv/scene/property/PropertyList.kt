@@ -97,12 +97,22 @@ class PropertyList<S, P: PropertyNode<S>>(
    }
    @OptIn(ExperimentalSerializationApi::class)
    override val saveSerializer by lazy { object : KSerializer<List<P>> {
-      val actualSerializer = ListSerializer(factory().saveSerializer)
+      val elementSerializer = object : KSerializer<P> {
+         val serializer = factory().saveSerializer
+         override val descriptor = serializer.descriptor
+         override fun serialize(encoder: Encoder, value: P) {
+            serializer.serialize(encoder, value.save())
+         }
+         override fun deserialize(decoder: Decoder): P {
+            val e = factory()
+            e.load(e.saveSerializer.deserialize(decoder))
+            return e
+         }
+      }
+      val actualSerializer = ListSerializer(elementSerializer)
       override val descriptor = SerialDescriptor("PropertyList", actualSerializer.descriptor)
       override fun serialize(encoder: Encoder, value: List<P>) =
-         encoder.encodeSerializableValue(actualSerializer, value.map { it.save() })
-      override fun deserialize(decoder: Decoder) = decoder.decodeSerializableValue(actualSerializer).map {
-         factory().apply { load(it) }
-      }
+         encoder.encodeSerializableValue(actualSerializer, value)
+      override fun deserialize(decoder: Decoder) = decoder.decodeSerializableValue(actualSerializer)
    }}
 }

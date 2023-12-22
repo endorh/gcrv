@@ -1,4 +1,4 @@
-package endorh.unican.gcrv.windows
+package endorh.unican.gcrv.windows.editor
 
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
@@ -10,8 +10,9 @@ import endorh.unican.gcrv.scene.property.PropertyNode
 import endorh.unican.gcrv.ui2.Group
 import endorh.unican.gcrv.ui2.SmallButton
 import endorh.unican.gcrv.util.toTitleCase
+import endorh.unican.gcrv.windows.BaseWindow
 
-class InspectorWindow(scene: EditorScene) : BaseWindow("Inspector", scene, true) {
+class InspectorWindow(scene: EditorScene) : BaseWindow<EditorScene>("Inspector", scene, true) {
 
     init {
         windowDockable.setFloatingBounds(width = Dp(150F), height = Dp(400F))

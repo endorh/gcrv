@@ -1,7 +1,6 @@
-package endorh.unican.gcrv.windows
+package endorh.unican.gcrv.windows.editor
 
 import de.fabmax.kool.input.CursorShape
-import de.fabmax.kool.input.InputStack
 import de.fabmax.kool.input.PointerInput
 import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec2f
@@ -9,18 +8,16 @@ import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.*
 import endorh.unican.gcrv.EditorScene
-import endorh.unican.gcrv.scene.Gizmo2D
-import endorh.unican.gcrv.scene.objects.LineObject2D
+import endorh.unican.gcrv.scene.TransformedGizmo
 import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.*
+import endorh.unican.gcrv.windows.BaseWindow
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.time.Duration
 import kotlin.time.measureTime
 
-class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
-    var lastPoint: Vec2i? = null
-
+class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene) {
     val canvasSize: MutableStateValue<Vec2i> = mutableSerialStateOf(Vec2i(10, 10)).onChange {
         resize(it.x, it.y, origin.value.x, origin.value.y)
     }
@@ -36,7 +33,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
 
     val pipeline get() = scene.pipeline
 
-    var lastDraggedGizmo: Gizmo2D? = null
+    var lastDraggedGizmo: TransformedGizmo? = null
     var lastDragStart: Vec2i? = null
     var lastDragOrigin: Vec2i = origin.value
 
@@ -227,6 +224,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
                     .onDragStart { ev ->
                         if (ev.pointer.isLeftButtonDown) {
                             scene.objectDrawingContext.value?.apply {
+                                // Start a drag in the currently drawn object
                                 val pos = Vec2f(ev.canvasPosition)
                                 dragStart(pos)
                                 drag(pos)
@@ -234,37 +232,37 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
                                     scene.drawObject(drawnObject)
                                     scene.objectDrawingContext.value = null
                                 }
-                            } ?: run {
-                                scene.brushType.value?.let { type ->
-                                    type.createDrawerContext()?.apply {
-                                        val pos = Vec2f(ev.canvasPosition)
-                                        dragStart(pos)
-                                        drag(pos)
-                                        scene.objectDrawingContext.value = this
-                                    }
-                                } ?: run {
-                                    val pos = ev.canvasPosition.toVec2i()
-                                    scene.selectedObjects.asSequence()
-                                        .flatMap { it.gizmos.asSequence() }
-                                        .filter { pos in it.collider }
-                                        .sortedBy { it.collider.centerDistance(pos) }
-                                        .firstOrNull()?.let { gizmo ->
-                                            lastDraggedGizmo = gizmo
-                                            return@onDragStart
-                                        }
+                            } ?: scene.brushType.value?.let { type ->
+                                // Start drawing a new object
+                                type.createDrawerContext()?.apply {
+                                    val pos = Vec2f(ev.canvasPosition)
+                                    dragStart(pos)
+                                    drag(pos)
+                                    scene.objectDrawingContext.value = this
                                 }
+                            } ?: run {
+                                // Start dragging a gizmo
+                                val pos = ev.canvasPosition
+                                val intPos = pos.toVec2i()
+                                scene.objectStack.collectGizmos(scene.selectedObjects).asSequence()
+                                    .filter { intPos in it.collider }
+                                    .sortedBy { it.collider.centerDistance(intPos) }
+                                    .firstOrNull()?.let {
+                                        it.dragStart(pos)
+                                        lastDraggedGizmo = it
+                                    }
                             }
                         }
                         if (ev.pointer.isMiddleButtonDown || ev.pointer.isRightButtonDown) {
+                            // Start dragging the canvas
                             lastDragStart = ev.position.toVec2i()
                             lastDragOrigin = origin.value
                             PointerInput.cursorShape = CursorShape.HAND
                         } else lastDragStart = null
                     }
                     .onDrag {
-                        lastDraggedGizmo?.let { g ->
-                            g.drag(it.canvasPosition)
-                        } ?: lastDragStart?.let { s ->
+                        lastDraggedGizmo?.drag(it.canvasPosition) ?:
+                        lastDragStart?.let { s ->
                             val (sx, sy) = s
                             val (x, y) = it.position.round
                             origin.value = Vec2i(lastDragOrigin.x + sx - x, lastDragOrigin.y - sy + y)
@@ -274,7 +272,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
                         }
                     }
                     .onDragEnd {
-                        lastDraggedGizmo = null
+                        lastDraggedGizmo?.dragEnd(it.canvasPosition)
                         if (lastDragStart != null) {
                             PointerInput.cursorShape = CursorShape.DEFAULT
                         } else scene.objectDrawingContext.value?.apply {
@@ -286,6 +284,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow("Canvas", scene) {
                                 scene.objectDrawingContext.value = null
                             }
                         }
+                        lastDraggedGizmo = null
                         lastDragStart = null
                         lastDragOrigin = origin.value
                     }

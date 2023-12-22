@@ -234,16 +234,20 @@ abstract class Easing(val type: EasingType<*>) {
 
    @Serializable(SinusoidalEasing.Type::class) @SerialName("periodic")
    class SinusoidalEasing(
-      semiPeriod: Float = 1F,
+      semiPeriod: Float = 0.25F,
       twiceAmplitude: Float = 1F,
    ) : Easing(Type) {
       val period_amplitude by control(Vec2f(semiPeriod, twiceAmplitude))
 
       val semiPeriod get() = period_amplitude.x
       val twiceAmplitude get() = period_amplitude.y
+      val amplitude get() = period_amplitude.y / 2
 
-      override fun ease(t: Float) =
-         0.5F - cos(t * PI_F / semiPeriod) * twiceAmplitude / 2
+      override fun ease(t: Float): Float {
+         if (semiPeriod == 0F)
+            return if (t <= 0F) 0F else if (t <= 1F) amplitude + (1F - twiceAmplitude) * t else 1F
+         return amplitude - cos(t * PI_F / semiPeriod) * amplitude + (1F - twiceAmplitude) * t
+      }
 
       override fun PixelRendererContext.drawGizmos(size: Int) {
          renderLine(Line2D(Vec2i(0, 0), (period_amplitude * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))

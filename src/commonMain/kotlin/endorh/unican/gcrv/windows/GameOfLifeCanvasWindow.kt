@@ -9,6 +9,7 @@ import de.fabmax.kool.util.ColorGradient
 import de.fabmax.kool.util.MdColor
 import de.fabmax.kool.util.RenderLoop
 import endorh.unican.gcrv.EditorScene
+import endorh.unican.gcrv.WindowScene
 import endorh.unican.gcrv.ui2.BufferCanvas
 import endorh.unican.gcrv.ui2.Canvas
 import endorh.unican.gcrv.util.B
@@ -22,7 +23,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.math.min
 
-class GameOfLifeCanvasWindow(scene: EditorScene) : BaseWindow("Conway`s Game of Life", scene), CoroutineScope {
+class GameOfLifeCanvasWindow(scene: WindowScene) : BaseWindow<WindowScene>("Conway`s Game of Life", scene), CoroutineScope {
     override val coroutineContext = EmptyCoroutineContext + Dispatchers.Default
 
     private val world = GameWorld(coroutineContext)

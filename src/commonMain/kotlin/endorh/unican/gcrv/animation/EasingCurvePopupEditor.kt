@@ -10,14 +10,14 @@ import endorh.unican.gcrv.util.F
 
 fun UiScope.EasingCurvePopupEditor(
    value: Easing, onValueChange: (Easing) -> Unit,
-   size: Int = 200, mod: UiScope.() -> Unit
+   size: Int = 200, hideOnClickOutside: Boolean = true, mod: UiScope.() -> Unit
 ) {
    val editorSize = Dp.fromPx(size.F)
    val popupWidth = editorSize + 200.dp
    val popupHeight = editorSize * 2 + 8.dp
    val easing = remember { mutableStateOf(value) }
    easing.value = value
-   val popup = AutoPopup {
+   val popup = AutoPopup(hideOnEsc = true, hideOnOutsideClick = hideOnClickOutside) {
       val e = easing.use()
       modifier
          .zLayer(this@EasingCurvePopupEditor.uiNode.modifier.zLayer + UiSurface.LAYER_POPUP)
@@ -56,8 +56,9 @@ fun UiScope.EasingCurvePopupEditor(
             .background(RoundRectBackground(Color("BD42BDBD"), 4.dp))
             .width(Grow(1F, max=100.dp))
             .onClick {
-               if (!popup.isVisible.value)
+               if (!popup.isVisible.value) {
                   popup.show(popupPosition(popupWidth, popupHeight))
+               } else popup.hide()
             }
       }
       // OptionPicker(EasingTypes, value.type, { onValueChange(it.factory()) })

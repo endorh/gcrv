@@ -1,4 +1,4 @@
-package endorh.unican.gcrv.windows
+package endorh.unican.gcrv.windows.editor
 
 import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.EditorScene
@@ -8,8 +8,9 @@ import endorh.unican.gcrv.ui2.LabeledBooleanField
 import endorh.unican.gcrv.ui2.LabeledColorField
 import endorh.unican.gcrv.ui2.LabeledIntField
 import endorh.unican.gcrv.ui2.Section
+import endorh.unican.gcrv.windows.BaseWindow
 
-class RenderSettingsWindow(scene: EditorScene) : BaseWindow("Render Settings", scene, true) {
+class RenderSettingsWindow(scene: EditorScene) : BaseWindow<EditorScene>("Render Settings", scene, true) {
     init {
         windowDockable.setFloatingBounds(width = Dp(250f), height = Dp(300f))
     }

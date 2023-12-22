@@ -7,9 +7,10 @@ import de.fabmax.kool.util.Color.Hsv
 import de.fabmax.kool.util.Font
 import de.fabmax.kool.util.MdColor
 import endorh.unican.gcrv.EditorScene
+import endorh.unican.gcrv.WindowScene
 import kotlin.math.roundToInt
 
-class ThemeEditorWindow(scene: EditorScene) : BaseWindow("Theme Editor", scene) {
+class ThemeEditorWindow(scene: WindowScene) : BaseWindow<WindowScene>("Theme Editor", scene) {
 
     private val presetsDark = listOf(
         "Yellow" to Colors.singleColorDark(MdColor.YELLOW),

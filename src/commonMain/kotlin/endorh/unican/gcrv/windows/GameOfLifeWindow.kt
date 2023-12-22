@@ -7,9 +7,10 @@ import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.ColorGradient
 import de.fabmax.kool.util.MdColor
 import endorh.unican.gcrv.EditorScene
+import endorh.unican.gcrv.WindowScene
 import kotlin.math.min
 
-class GameOfLifeWindow(scene: EditorScene) : BaseWindow("Conway`s Game of Life", scene) {
+class GameOfLifeWindow(scene: WindowScene) : BaseWindow<WindowScene>("Conway`s Game of Life", scene) {
 
     private val world = GameWorld()
     private val worldRenderer = GameWorldRenderer()

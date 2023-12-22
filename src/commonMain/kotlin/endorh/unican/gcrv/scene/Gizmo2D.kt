@@ -103,41 +103,91 @@ class Point2iCollider(val point: Vec2i, val radius: Int) : Collider {
 
 interface Gizmo2D {
    val collider: Collider
+
    /**
     * Occurs within a canvas update, which means implementations don't need to call [BufferCanvas.update].
     */
-   fun render(canvas: BufferCanvas)
-   fun drag(pos: Vec2f)
+   fun render(canvas: BufferCanvas, transform: Transform2D)
+
+   /**
+    * The [position] is in geometric space (i.e., after applying any transforms inversely)
+    */
+   fun dragStart(position: Vec2f) {}
+   /**
+    * The [position] is in geometric space (i.e., after applying any transforms inversely)
+    *
+    * Implementations may also override [dragStart] and [dragEnd] to support stateful drag operations.
+    */
+   fun drag(position: Vec2f)
+   /**
+    * The [position] is in geometric space (i.e., after applying any transforms inversely)
+    */
+   fun dragEnd(position: Vec2f) {}
 }
 
-fun interface DrawGizmo : Gizmo2D {
-   override val collider: Collider get() = Collider.None
-   fun PixelRendererContext.render()
+data class TransformedGizmo(val gizmo: Gizmo2D, val transform: Transform2D) {
+   val collider: Collider get() = TransformedCollider(gizmo.collider, transform)
+   fun render(canvas: BufferCanvas) = gizmo.render(canvas, transform)
+   fun dragStart(pos: Vec2f) = gizmo.dragStart(transform.inverse.transform(pos))
+   fun drag(pos: Vec2f) = gizmo.drag(transform.inverse.transform(pos))
+   fun dragEnd(pos: Vec2f) = gizmo.dragEnd(transform.inverse.transform(pos))
+}
 
-   override fun render(canvas: BufferCanvas) {
+class DrawGizmo(val renderer: PixelRendererContext.(Transform2D) -> Unit) : Gizmo2D {
+   override val collider: Collider get() = Collider.None
+   override fun render(canvas: BufferCanvas, transform: Transform2D) {
       CanvasPixelRendererContext(canvas).apply {
-         render()
+         renderer(transform)
       }
    }
-   override fun drag(pos: Vec2f) {}
+   override fun drag(position: Vec2f) {}
 }
 
 class ControlPointGizmo(
-   val value: () -> Vec2f, val onChange: (Vec2f) -> Unit,
-   val style: ControlPointGizmoStyle = ControlPointGizmoStyle()
+   val value: () -> Vec2f, val style: ControlPointGizmoStyle = ControlPointGizmoStyle(),
+   val onChange: GizmoDragListener
 ): Gizmo2D {
    override val collider get() = Point2iCollider(value().toVec2i(), 20)
 
-   override fun render(canvas: BufferCanvas) {
+   override fun render(canvas: BufferCanvas, transform: Transform2D) {
       with (CanvasPixelRendererContext(canvas)) {
-         val pos = value().toVec2i()
+         val pos = (transform * value()).toVec2i()
          renderPoint(Point2D(pos, style.outPoint))
          renderPoint(Point2D(pos, style.inPoint))
       }
    }
 
-   override fun drag(pos: Vec2f) {
-      onChange(pos)
+   override fun dragStart(position: Vec2f) {
+      onChange.onDragStart(position)
+   }
+   override fun drag(position: Vec2f) {
+      onChange.onDrag(position)
+   }
+   override fun dragEnd(position: Vec2f) {
+      onChange.onDragEnd(position)
+   }
+
+   fun interface GizmoDragListener {
+      fun onDragStart(pos: Vec2f) {}
+      fun onDrag(pos: Vec2f)
+      fun onDragEnd(pos: Vec2f) {}
+
+      fun redirect(other: GizmoDragListener?) = other?.let {
+         object : GizmoDragListener {
+            override fun onDragStart(pos: Vec2f) {
+               this@GizmoDragListener.onDragStart(pos)
+               other.onDragStart(pos)
+            }
+            override fun onDrag(pos: Vec2f) {
+               this@GizmoDragListener.onDrag(pos)
+               other.onDrag(pos)
+            }
+            override fun onDragEnd(pos: Vec2f) {
+               this@GizmoDragListener.onDragEnd(pos)
+               other.onDragEnd(pos)
+            }
+         }
+      } ?: this
    }
 
    data class ControlPointGizmoStyle(
