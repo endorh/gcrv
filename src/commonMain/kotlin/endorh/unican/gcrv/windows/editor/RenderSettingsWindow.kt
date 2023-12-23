@@ -36,7 +36,8 @@ class RenderSettingsWindow(scene: EditorScene) : BaseWindow<EditorScene>("Render
                 LabeledIntField("Buffers", scene.canvasBuffersNum)
             }
 
-            Section("Style", false) {
+            Section("Style") {
+                modifier.padding(4.dp).backgroundColor(colors.backgroundVariant)
                 Section("Spline", false) {
                     LabeledField("Renderer") {
                         OptionPicker(CubicSplineRenderers, scene.cubicSplineRenderingSettings.fallbackRenderer.use(), { scene.cubicSplineRenderingSettings.fallbackRenderer.value = it }) { it() }

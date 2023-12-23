@@ -25,23 +25,12 @@ class EditorMenuWindow(scene: EditorScene) : BaseWindow<EditorScene>("Menu", sce
                 FixedSection("Load project") {
                     modifier.padding(8.dp)
 
-                    val selectedFile = remember { mutableStateOf<FileReadHandle?>(null) }
                     FilePicker {
                         modifier.width(Grow.Std).margin(2.dp)
                             .fileFilters(FileFilter.JSON)
                         onFileChosen {
-                            selectedFile.value = it
-                        }
-                    }
-
-                    Button("Load project") {
-                        modifier.width(Grow.Std).margin(2.dp)
-                        onClick {
-                            selectedFile.value?.let {
-                                println("File chosen: \"$it\"")
-                                launch {
-                                    scene.loadProjectFromJSON(it.readAsText().await())
-                                }
+                            launch {
+                                scene.loadProjectFromJSON(it.readAsText().await())
                             }
                         }
                     }
@@ -54,7 +43,6 @@ class EditorMenuWindow(scene: EditorScene) : BaseWindow<EditorScene>("Menu", sce
                             .fileFilters(FileFilter.JSON)
                             .suggestedFileName("scene.json")
                         onFileTextRequested {
-                            println("Generating saved file chosen")
                             scene.saveProjectToJSON()
                         }
                     }

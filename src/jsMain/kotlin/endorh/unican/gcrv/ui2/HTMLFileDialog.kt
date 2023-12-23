@@ -3,12 +3,11 @@ package endorh.unican.gcrv.ui2
 import kotlinx.browser.document
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.asPromise
+import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.HTMLLinkElement
 import org.w3c.dom.url.URL
 import org.w3c.files.Blob
 import org.w3c.files.BlobPropertyBag
-import org.w3c.files.FileReader
 import org.w3c.files.get
 import kotlin.js.Promise
 
@@ -29,9 +28,9 @@ object HTMLFileDialog {
          }
       }
    }
-   private val downloadElement: HTMLLinkElement by lazy {
-      document.getElementById(DOWNLOAD_ELEMENT_ID) as? HTMLLinkElement ?: run {
-         (document.createElement("a") as HTMLLinkElement).apply {
+   private val downloadElement: HTMLAnchorElement by lazy {
+      document.getElementById(DOWNLOAD_ELEMENT_ID) as? HTMLAnchorElement ?: run {
+         (document.createElement("a") as HTMLAnchorElement).apply {
             id = DOWNLOAD_ELEMENT_ID
             style.display = "none"
             document.body?.appendChild(this)

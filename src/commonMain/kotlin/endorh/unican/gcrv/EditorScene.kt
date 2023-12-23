@@ -89,7 +89,7 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
         mutableStateOf(false).affectsCanvas(),
     )
     val timeLine = mutableStateOf(TimeLine())
-    val fps = mutableStateOf(30)
+    val fps = mutableStateOf(12)
     val playbackManager = mutableStateOf(PlaybackManager(coroutineContext, timeLine.value))
     val selectedProperties = mutableStateOf<List<AnimProperty<*>>>(emptyList())
 
