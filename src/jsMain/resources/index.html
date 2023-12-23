@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Prácticas - GCRV - KOOL</title>
+    <title>GCRV - KOOL</title>
     <style>
         body {
             background-color: black;
@@ -19,12 +19,19 @@
     </style>
 </head>
 <body>
-    <!-- tabindex is required to make canvas focusable, needed to get per-canvas key events -->
+    <noscript><div style="background-color: white; color: black; padding: 1em;">
+        <p>This page uses JavaScript to render a WebGL application using the
+            <a href="https://github.com/fabmax/kool">kool</a> graphics engine.</p>
+        <p>To view this page, please enable JavaScript for this site, or use a different browser.</p>
+    </div></noscript>
+
+    <!-- tabindex is required to make canvas focusable and get per-canvas key events -->
     <canvas id="glCanvas" tabindex="0">
         Your browser doesn't appear to support the <code>&lt;canvas&gt;</code> element.
+        Try using a different browser to view this page.
     </canvas>
 
     <!--suppress HtmlUnknownTarget -->
-    <script src="p1-line-algorithms.js"></script>
+    <script src="gcrv.js"></script>
 </body>
 </html>
