@@ -17,7 +17,7 @@ kotlin {
 
         @Suppress("OPT_IN_USAGE")
         mainRun {
-            mainClass.set("endorh.unican.gcrv.line_algorithms.MainKt")
+            mainClass.set("endorh.unican.gcrv.MainKt")
         }
     }
     js(IR) {

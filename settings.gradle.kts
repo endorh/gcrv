@@ -5,4 +5,4 @@ pluginManagement {
    }
 }
 
-rootProject.name = "p1-line-algorithms"
+rootProject.name = "gcrv"
