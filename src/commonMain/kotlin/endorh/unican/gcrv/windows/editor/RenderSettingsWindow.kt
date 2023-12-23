@@ -31,31 +31,38 @@ class RenderSettingsWindow(scene: EditorScene) : BaseWindow<EditorScene>("Render
                 LabeledBooleanField("Points", scene.pointPass.enabled)
                 LabeledBooleanField("Gizmos", scene.gizmoPass.enabled)
             }
-            Section("Spline Style") {
-                LabeledField("Renderer") {
-                    OptionPicker(CubicSplineRenderers, scene.cubicSplineRenderingSettings.fallbackRenderer.use(), { scene.cubicSplineRenderingSettings.fallbackRenderer.value = it }) { it() }
-                }
-                LabeledBooleanField("Enforce", scene.cubicSplineRenderingSettings.enforceRenderer)
-                LabeledColorField("Color", scene.cubicSplineRenderingSettings.fallbackColor)
-                LabeledBooleanField("Enforce", scene.cubicSplineRenderingSettings.enforceColor)
+
+            Section("Canvas") {
+                LabeledIntField("Buffers", scene.canvasBuffersNum)
             }
-            Section("Line Style") {
-                LabeledField("Renderer") {
-                    OptionPicker(LineRenderers, scene.wireframeSettings.fallbackRenderer.use(), { scene.wireframeSettings.fallbackRenderer.value = it }) { it() }
+
+            Section("Style", false) {
+                Section("Spline", false) {
+                    LabeledField("Renderer") {
+                        OptionPicker(CubicSplineRenderers, scene.cubicSplineRenderingSettings.fallbackRenderer.use(), { scene.cubicSplineRenderingSettings.fallbackRenderer.value = it }) { it() }
+                    }
+                    LabeledBooleanField("Enforce", scene.cubicSplineRenderingSettings.enforceRenderer)
+                    LabeledColorField("Color", scene.cubicSplineRenderingSettings.fallbackColor)
+                    LabeledBooleanField("Enforce", scene.cubicSplineRenderingSettings.enforceColor)
                 }
-                LabeledBooleanField("Enforce", scene.wireframeSettings.enforceRenderer)
-                LabeledColorField("Color", scene.wireframeSettings.fallbackColor)
-                LabeledBooleanField("Enforce", scene.wireframeSettings.enforceColor)
-            }
-            Section("Point Style") {
-                LabeledField("Renderer") {
-                    OptionPicker(PointRenderers, scene.pointSettings.fallbackRenderer.use(), { scene.pointSettings.fallbackRenderer.value = it }) { it() }
+                Section("Line", false) {
+                    LabeledField("Renderer") {
+                        OptionPicker(LineRenderers, scene.wireframeSettings.fallbackRenderer.use(), { scene.wireframeSettings.fallbackRenderer.value = it }) { it() }
+                    }
+                    LabeledBooleanField("Enforce", scene.wireframeSettings.enforceRenderer)
+                    LabeledColorField("Color", scene.wireframeSettings.fallbackColor)
+                    LabeledBooleanField("Enforce", scene.wireframeSettings.enforceColor)
                 }
-                LabeledBooleanField("Enforce", scene.pointSettings.enforceRenderer)
-                LabeledIntField("Size", scene.pointSettings.fallbackSize)
-                LabeledBooleanField("Enforce", scene.pointSettings.enforceSize)
-                LabeledColorField("Color", scene.pointSettings.fallbackColor)
-                LabeledBooleanField("Enforce", scene.pointSettings.enforceColor)
+                Section("Point", false) {
+                    LabeledField("Renderer") {
+                        OptionPicker(PointRenderers, scene.pointSettings.fallbackRenderer.use(), { scene.pointSettings.fallbackRenderer.value = it }) { it() }
+                    }
+                    LabeledBooleanField("Enforce", scene.pointSettings.enforceRenderer)
+                    LabeledIntField("Size", scene.pointSettings.fallbackSize)
+                    LabeledBooleanField("Enforce", scene.pointSettings.enforceSize)
+                    LabeledColorField("Color", scene.pointSettings.fallbackColor)
+                    LabeledBooleanField("Enforce", scene.pointSettings.enforceColor)
+                }
             }
         }
     }

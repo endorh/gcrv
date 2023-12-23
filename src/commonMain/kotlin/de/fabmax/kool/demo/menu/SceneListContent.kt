@@ -77,7 +77,7 @@ class SceneListContent(val menu: SceneMenu) : Composable {
             modifier
                 .backgroundColor(item.color)
                 .textColor(Color.WHITE)
-        } else if (item.demo?.id == Settings.selectedDemo.value) {
+        } else if (item.demo?.id == Settings.selectedScene.value) {
             modifier
                 .backgroundColor(item.color.withAlpha(0.2f))
                 .textColor(Color.WHITE)

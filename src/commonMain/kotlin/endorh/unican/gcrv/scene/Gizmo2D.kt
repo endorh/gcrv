@@ -38,7 +38,7 @@ interface Collider {
    /**
     * Distance to the center of this collider, used to untie [Collider] clicks.
     */
-   fun centerDistance(p: Vec2i): Float = rectangle.center.toVec2f().distance(p.toVec2f())
+   fun centerDistance(p: Vec2i): Float = center.toVec2f().distance(p.toVec2f())
 
    object None : Collider {
       override val rectangle get() = Rect2i.ZERO

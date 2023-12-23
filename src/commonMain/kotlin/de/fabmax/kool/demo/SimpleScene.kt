@@ -40,6 +40,8 @@ abstract class SimpleScene(val name: String) {
             value?.loadingText2?.set("")
         }
 
+    open fun loadStartupParams(params: Map<String, String>) {}
+
     suspend fun showLoadText(text: String, delayFrames: Int = 1) {
         loadingScreen?.let { ls ->
             ls.loadingText2.set(text)

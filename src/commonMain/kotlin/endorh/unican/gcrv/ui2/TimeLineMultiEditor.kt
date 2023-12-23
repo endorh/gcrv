@@ -16,7 +16,9 @@ import endorh.unican.gcrv.scene.property.CompoundAnimProperty
 import endorh.unican.gcrv.scene.property.PropertyList
 import endorh.unican.gcrv.scene.property.PropertyNode
 import endorh.unican.gcrv.util.F
+import endorh.unican.gcrv.util.ModifierState
 import endorh.unican.gcrv.util.toTitleCase
+import endorh.unican.gcrv.util.toggle
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -93,7 +95,7 @@ class SimpleKeyFrameMultiRenderer(val color: Color) : KeyFrameMultiRenderer {
 @OptIn(ExperimentalContracts::class)
 inline fun UiScope.TimeLineMultiEditor(
    timeLine: TimeLine,
-   focusedProperty: MutableStateValue<AnimProperty<*>?>,
+   focusedProperties: MutableStateList<AnimProperty<*>>,
    scopeName: String? = null,
    block: TimeLineMultiEditorScope.() -> Unit = {}
 ): TimeLineMultiEditorScope {
@@ -102,7 +104,7 @@ inline fun UiScope.TimeLineMultiEditor(
    }
 
    return uiNode.createChild(scopeName, TimeLineMultiEditorNode::class, TimeLineMultiEditorNode.factory).apply {
-      init(timeLine, focusedProperty)
+      init(timeLine, focusedProperties)
       modifier.width(Grow.Std)
          .onClick(this)
          .dragListener(this)
@@ -119,18 +121,19 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
    TimeLineMultiEditorScope, Clickable, Hoverable, Draggable {
    override lateinit var timeLine: TimeLine
    override val modifier = TimeLineMultiEditorModifier(surface)
-   private var focusedProperty: MutableStateValue<AnimProperty<*>?> = mutableSerialStateOf(null)
+   private var focusedProperties: MutableStateList<AnimProperty<*>> = mutableStateListOf()
 
    private val textCache = mutableMapOf<String, CachedTextGeometry>()
 
-   fun init(timeLine: TimeLine, focusedProperty: MutableStateValue<AnimProperty<*>?>? = null) {
+   fun init(
+      timeLine: TimeLine,
+      focusedProperties: MutableStateList<AnimProperty<*>>? = null
+   ) {
       if (!::timeLine.isInitialized) {
          this.timeLine = timeLine
          displayedRange.value = timeLine.renderedRange
       }
-      focusedProperty?.let {
-         this.focusedProperty = it
-      }
+      focusedProperties?.let { this.focusedProperties = it }
    }
 
    val displayedRange = mutableSerialStateOf(TimeRange(TimeStamp(0), TimeStamp(10)))
@@ -206,7 +209,8 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
       var trackY = 24F + 12F - yScroll
       val treeLineColor = modifier.propertyTextColor.withAlpha(0.5F)
       fun drawTrack(node: PropertyNode<*>, suppressTitle: Boolean = false) {
-         val focused = node == focusedProperty.value
+         val focused = node in focusedProperties.use()
+         // val focused = node == focusedProperty.value
          if (node !is CompoundAnimProperty || !suppressTitle) drawPropName(
             node.name.toTitleCase(), trackX, trackY,
             if (focused) modifier.focusedPropertyTextColor else modifier.propertyTextColor)
@@ -334,8 +338,50 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
       ev.timeLineX.t?.let {
          timeLine.currentTime.value = it.maybeSnap
       }
-      ev.track?.let {
-         focusedProperty.value = it
+      ev.track?.let { track ->
+         if (ModifierState.shiftPressed) {
+            focusedProperties.lastOrNull()?.let { last ->
+               var range: MutableList<AnimProperty<*>>? = null
+               fun collectVisit(p: PropertyNode<*>): Boolean {
+                  if (p is CompoundAnimProperty) {
+                     for (sub in p.properties.values)
+                        if (collectVisit(sub)) return true
+                  } else if (p is PropertyList<*, *>) {
+                     for (sub in p.entries)
+                        if (collectVisit(sub)) return true
+                  } else if (p is AnimProperty<*>) {
+                     if (range != null) {
+                        if (p == last) return true
+                        range!!.add(p)
+                        if (p == track) return true
+                     } else if (p == last) {
+                        range = mutableListOf()
+                     } else if (p == track) {
+                        range = mutableListOf(p)
+                     }
+                  }
+                  return false
+               }
+               for (p in modifier.properties)
+                  if (p.firstOrNull()?.let { collectVisit(it) } == true) break
+               range?.takeIf { it.isNotEmpty() }?.let {
+                  if (it.first() == track) it.reverse()
+                  if (track in focusedProperties) for (e in it) {
+                     if (e in focusedProperties)
+                        focusedProperties.remove(e)
+                  } else for (e in it) {
+                     if (e in focusedProperties)
+                        focusedProperties.remove(e)
+                     focusedProperties.add(e)
+                  }
+               }
+            }
+         } else if (ModifierState.ctrlPressed) {
+            focusedProperties.toggle(track)
+         } else {
+            focusedProperties.clear()
+            focusedProperties.add(track)
+         }
       }
    }
 

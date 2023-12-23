@@ -1,0 +1,116 @@
+{
+  "objects": [
+    {
+      "type": "group",
+      "children": [
+        {
+          "type": "line",
+          "style": {
+            "color": "FFFFFFFF",
+            "breadth": 1.0,
+            "renderer": {
+            },
+            "start": {
+              "color": "FFFFFFFF",
+              "size": 5.0,
+              "renderer": {
+              }
+            },
+            "end": {
+              "color": "FFFFFFFF",
+              "size": 5.0,
+              "renderer": {
+              }
+            }
+          },
+          "localTransforms": [
+          ],
+          "globalTransforms": [
+          ],
+          "start": [
+            97.0,
+            95.0
+          ],
+          "end": [
+            289.0,
+            143.0
+          ],
+          "name": "Line 1"
+        },
+        {
+          "type": "line",
+          "style": {
+            "color": "FFFFFFFF",
+            "breadth": 1.0,
+            "renderer": {
+            },
+            "start": {
+              "color": "FFFFFFFF",
+              "size": 5.0,
+              "renderer": {
+              }
+            },
+            "end": {
+              "color": "FFFFFFFF",
+              "size": 5.0,
+              "renderer": {
+              }
+            }
+          },
+          "localTransforms": [
+          ],
+          "globalTransforms": [
+          ],
+          "start": [
+            152.0,
+            123.0
+          ],
+          "end": [
+            192.0,
+            87.0
+          ],
+          "name": "Line 2"
+        },
+        {
+          "type": "line",
+          "style": {
+            "color": "FFFFFFFF",
+            "breadth": 1.0,
+            "renderer": {
+            },
+            "start": {
+              "color": "FFFFFFFF",
+              "size": 5.0,
+              "renderer": {
+              }
+            },
+            "end": {
+              "color": "FFFFFFFF",
+              "size": 5.0,
+              "renderer": {
+              }
+            }
+          },
+          "localTransforms": [
+          ],
+          "globalTransforms": [
+          ],
+          "start": [
+            203.0,
+            133.0
+          ],
+          "end": [
+            250.0,
+            104.0
+          ],
+          "name": "Line 3"
+        }
+      ],
+      "localTransforms": [
+      ],
+      "globalTransforms": [
+      ],
+      "name": "Group 1"
+    }
+  ]
+}

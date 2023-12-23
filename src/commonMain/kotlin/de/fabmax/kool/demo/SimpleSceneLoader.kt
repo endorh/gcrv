@@ -2,7 +2,6 @@ package de.fabmax.kool.demo
 
 import de.fabmax.kool.KoolContext
 import de.fabmax.kool.demo.menu.SceneMenu
-import de.fabmax.kool.input.InputStack
 import de.fabmax.kool.input.PointerInput
 import de.fabmax.kool.physics.Physics
 import de.fabmax.kool.util.DebugOverlay
@@ -13,6 +12,7 @@ fun launchSceneLoader(
     startScene: String? = null,
     ctx: KoolContext,
     loadPhysics: Boolean = true,
+    params: Map<String, String> = emptyMap(),
     onReady: (KoolContext) -> Unit = {}
 ) {
     var name = startScene
@@ -21,13 +21,14 @@ fun launchSceneLoader(
         if (name.endsWith("scene"))
             name = name.substring(0, name.length - 4)
     }
-    SimpleSceneLoader(ctx, name, loadPhysics, onReady)
+    SimpleSceneLoader(ctx, name, loadPhysics, params, onReady)
 }
 
 class SimpleSceneLoader(
     ctx: KoolContext,
     startScene: String? = null,
     loadPhysics: Boolean = true,
+    val loadParams: Map<String, String> = emptyMap(),
     private val onReady: (KoolContext) -> Unit = {}
 ) {
     val dbgOverlay = DebugOverlay(DebugOverlay.Position.LOWER_RIGHT)
@@ -36,9 +37,12 @@ class SimpleSceneLoader(
     private val loadingScreen = LoadingScreen(ctx)
     private var currentScene: Pair<String, SimpleScene>? = null
     private var switchEntry: Scenes.Entry? = null
+    var isJustLoaded = true
+    private set
 
-    private var initShownMenu = false
-    private var shouldAutoHideMenu = 2.5f
+    // We don't show the menu if there were any params supplied
+    private var initShownMenu = loadParams.isNotEmpty()
+    private var shouldAutoHideMenu = 3F
 
     val activeDemo: SimpleScene?
         get() = currentScene?.second
@@ -54,7 +58,7 @@ class SimpleSceneLoader(
         ctx.scenes += menu.ui
         ctx.onRender += ::onRender
 
-        val loadScene = startScene ?: Settings.selectedDemo.value
+        val loadScene = startScene ?: Settings.selectedScene.value
         val loadDemo = Scenes.scenes[loadScene] ?: Scenes.scenes[Scenes.defaultScene]!!
         switchEntry = loadDemo
         ModifierState.registerListeners()
@@ -70,8 +74,8 @@ class SimpleSceneLoader(
         applySettings(ctx)
         if (framesUntilReady > 0 && --framesUntilReady <= 0) onReady(ctx)
 
-        switchEntry?.let { newDemo ->
-            Settings.selectedDemo.set(newDemo.id)
+        switchEntry?.let { newScene ->
+            Settings.selectedScene.set(newScene.id)
 
             // release old demo
             currentScene?.second?.let { scene ->
@@ -87,11 +91,15 @@ class SimpleSceneLoader(
             }
             ctx.scenes.add(0, loadingScreen)
 
-            // set new demo
-            currentScene = newDemo.id to newDemo.newInstance(ctx).also {
-                it.sceneEntry = newDemo
+            // set new scene
+            currentScene = newScene.id to newScene.newInstance(ctx).also {
+                it.sceneEntry = newScene
                 it.sceneLoader = this
                 it.loadingScreen = loadingScreen
+                if (isJustLoaded) {
+                    it.loadStartupParams(loadParams)
+                    isJustLoaded = false
+                }
             }
             switchEntry = null
         }

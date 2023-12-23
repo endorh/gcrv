@@ -40,15 +40,7 @@ class EditorMenuWindow(scene: EditorScene) : BaseWindow<EditorScene>("Menu", sce
                             selectedFile.value?.let {
                                 println("File chosen: \"$it\"")
                                 launch {
-                                    val text = it.readAsText().await()
-                                    try {
-                                        val stack = JsonFormat.decodeFromString(serializer<Object2DStack>(), text)
-                                        scene.loadStack(stack)
-                                    } catch (e: Exception) {
-                                        println("Failed to load project: $e")
-                                        e.printStackTrace()
-                                        throw e
-                                    }
+                                    scene.loadProjectFromJSON(it.readAsText().await())
                                 }
                             }
                         }
@@ -63,7 +55,7 @@ class EditorMenuWindow(scene: EditorScene) : BaseWindow<EditorScene>("Menu", sce
                             .suggestedFileName("scene.json")
                         onFileTextRequested {
                             println("Generating saved file chosen")
-                            JsonFormat.encodeToString(serializer<Object2DStack>(), scene.objectStack)
+                            scene.saveProjectToJSON()
                         }
                     }
                 }

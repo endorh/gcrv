@@ -19,16 +19,16 @@ object Settings {
 
     private val settings = mutableListOf<MutableStateSettings<*>>()
 
-    val isFullscreen = MutableStateSettings("koolDemo.isFullscreen", false) { it.toBoolean() }
-    val showHiddenDemos = MutableStateSettings("koolDemo.showHiddenDemos", false) { it.toBoolean() }
-    val showDebugOverlay = MutableStateSettings("koolDemo.showDebugOverlay", true) { it.toBoolean() }
-    val showMenuOnStartup = MutableStateSettings("koolDemo.showMenuOnStartup", true) { it.toBoolean() }
+    val isFullscreen = MutableStateSettings("gcrv.isFullscreen", false) { it.toBoolean() }
+    val showHiddenDemos = MutableStateSettings("gcrv.showHiddenDemos", false) { it.toBoolean() }
+    val showDebugOverlay = MutableStateSettings("gcrv.showDebugOverlay", true) { it.toBoolean() }
+    val showMenuOnStartup = MutableStateSettings("gcrv.showMenuOnStartup", true) { it.toBoolean() }
 
-    val uiSize = MutableStateSettings("koolDemo.uiSize", defaultUiSize) {
+    val uiSize = MutableStateSettings("gcrv.uiSize", defaultUiSize) {
         defaultUiSizes[it] ?: defaultUiSize
     }
 
-    val selectedDemo = MutableStateSettings("koolDemo.selectedDemo", Scenes.defaultScene) { it }
+    val selectedScene = MutableStateSettings("gcrv.selectedScene", Scenes.defaultScene) { it }
 
     fun loadSettings() {
         settings.forEach { it.load() }

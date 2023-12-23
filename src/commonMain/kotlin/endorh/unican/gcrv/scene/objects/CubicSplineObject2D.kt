@@ -1,5 +1,6 @@
 package endorh.unican.gcrv.scene.objects
 
+import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.modules.ui2.UiScope
 import de.fabmax.kool.modules.ui2.mutableStateOf
@@ -101,7 +102,7 @@ open class CubicSplineObject2D(
                   p.value = initPositions[i]
             }
             controlPoints[idx].value = pos
-         } else if (!ModifierState.ctrlPressed) {
+         } else {
             val delta = pos - initPos
             fun dragPoints(vararg indices: Int) = indices.forEach {
                controlPoints[it].value = initPositions[it] + delta
@@ -112,20 +113,29 @@ open class CubicSplineObject2D(
                dragPoints(*if (connected) intArrayOf(endIndex - 1, endIndex, 0, 1) else intArrayOf(endIndex - 1, endIndex))
             } else if (idx % 3 == 0) dragPoints(idx - 1, idx, idx + 1) else {
                controlPoints[idx].value = pos
-               val o = if (idx % 3 == 1) idx - 2 else idx + 2
+               var o = if (idx % 3 == 1) idx - 2 else idx + 2
+               var pivot = if (idx % 3 == 1) idx - 1 else idx + 1
                if (o < 0) {
                   if (connected) {
                      controlPoints[endIndex].value = initPositions[0]
-                     controlPoints[endIndex - 1].value = initPositions[endIndex] * 2F - pos
+                     o = endIndex - 1
+                     pivot = endIndex
                   }
                } else if (o > endIndex) {
                   if (connected) {
                      controlPoints[0].value = initPositions[endIndex]
-                     controlPoints[1].value = initPositions[0] * 2F - pos
+                     o = 1
+                     pivot = 0
+                  } else o = -1
+               }
+               if (o > 0) {
+                  if (ModifierState.shiftPressed) {
+                     controlPoints[o].value = initPositions[pivot] * 2F - pos
+                  } else {
+                     val diff = initPositions[pivot] - pos
+                     val offset = diff * (initPositions[pivot].distance(initPositions[o]) / diff.length())
+                     controlPoints[o].value = initPositions[pivot] + offset
                   }
-               } else {
-                  val pivot = if (idx % 3 == 1) idx - 1 else idx + 1
-                  controlPoints[o].value = initPositions[pivot] * 2F - pos
                }
             }
          }

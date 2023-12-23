@@ -24,6 +24,11 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
     val origin: MutableStateValue<Vec2i> = mutableSerialStateOf(Vec2i(0, 0)).onChange {
         resize(canvasSize.value.x, canvasSize.value.y, it.x, it.y)
     }
+    init {
+       scene.canvasBuffersNum.onChange {
+           resize(canvasSize.value.x, canvasSize.value.y, origin.value.x, origin.value.y)
+       }
+    }
     var canvasState = mutableSerialStateOf(makeCanvas(canvasSize.value.x, canvasSize.value.y, origin.value.x, origin.value.y))
     val canvas get() = canvasState.value
     lateinit var canvasScope: CanvasScope
@@ -117,7 +122,9 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
         }
     }
 
-    protected fun makeCanvas(width: Int, height: Int, centerX: Int, centerY: Int) = BufferCanvas(width, height).apply {
+    protected fun makeCanvas(width: Int, height: Int, centerX: Int, centerY: Int) = BufferCanvas(
+        width, height, buffersNum = scene.canvasBuffersNum.value
+    ).apply {
         origin.set(Vec2i(centerX - width / 2, centerY - height / 2))
     }
 
@@ -202,8 +209,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
                                 Unit
                             }
                         }
-                    }
-                    .onHover {
+                    }.onHover {
                         if (ModifierState.altPressed) {
                             popupCanvasCenter.value = it.canvasPosition
                             val popupPos = it.screenPosition.subtract(
@@ -220,8 +226,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
                             hover(it.canvasPosition)
                             // We don't allow ending a draw operation on hover
                         }
-                    }
-                    .onDragStart { ev ->
+                    }.onDragStart { ev ->
                         if (ev.pointer.isLeftButtonDown) {
                             scene.objectDrawingContext.value?.apply {
                                 // Start a drag in the currently drawn object
@@ -244,7 +249,8 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
                                 // Start dragging a gizmo
                                 val pos = ev.canvasPosition
                                 val intPos = pos.toVec2i()
-                                scene.objectStack.collectGizmos(scene.selectedObjects).asSequence()
+                                val gizmos = scene.objectStack.collectGizmos(scene.selectedObjects)
+                                gizmos.asSequence()
                                     .filter { intPos in it.collider }
                                     .sortedBy { it.collider.centerDistance(intPos) }
                                     .firstOrNull()?.let {
@@ -259,8 +265,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
                             lastDragOrigin = origin.value
                             PointerInput.cursorShape = CursorShape.HAND
                         } else lastDragStart = null
-                    }
-                    .onDrag {
+                    }.onDrag {
                         lastDraggedGizmo?.drag(it.canvasPosition) ?:
                         lastDragStart?.let { s ->
                             val (sx, sy) = s
@@ -270,8 +275,7 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
                         } ?: scene.objectDrawingContext.value?.apply {
                             drag(it.canvasPosition)
                         }
-                    }
-                    .onDragEnd {
+                    }.onDragEnd {
                         lastDraggedGizmo?.dragEnd(it.canvasPosition)
                         if (lastDragStart != null) {
                             PointerInput.cursorShape = CursorShape.DEFAULT

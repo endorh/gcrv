@@ -10,6 +10,7 @@ import endorh.unican.gcrv.animation.TimeLine
 import endorh.unican.gcrv.renderers.*
 import endorh.unican.gcrv.scene.ControlPointGizmo.ControlPointGizmoStyle
 import endorh.unican.gcrv.scene.ControlPointGizmo.GizmoDragListener
+import endorh.unican.gcrv.scene.Object2DStack.Serializer.listSerializer
 import endorh.unican.gcrv.scene.objects.CubicSplineObject2D
 import endorh.unican.gcrv.scene.objects.GroupObject2D
 import endorh.unican.gcrv.scene.objects.LineObject2D
@@ -33,7 +34,7 @@ import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
 
-@Serializable
+@Serializable(Object2DStack.Serializer::class)
 class Object2DStack {
    val objects: MutableSerialStateList<Object2D> = mutableStateListOf()
 
@@ -60,6 +61,17 @@ class Object2DStack {
       }
       for (o in objects) render(o)
       return collector.collected
+   }
+
+   object Serializer : KSerializer<Object2DStack> {
+      val listSerializer = ListSerializer(PolymorphicSerializer(Object2D::class))
+      override val descriptor get() = listSerializer.descriptor
+      override fun deserialize(decoder: Decoder) = Object2DStack().apply {
+         objects.addAll(listSerializer.deserialize(decoder))
+      }
+      override fun serialize(encoder: Encoder, value: Object2DStack) {
+         listSerializer.serialize(encoder, value.objects)
+      }
    }
 }
 

@@ -9,10 +9,13 @@ import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.modules.ui2.docking.Dock
 import de.fabmax.kool.modules.ui2.docking.UiDockable
+import de.fabmax.kool.pipeline.PlatformAttributeProps
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.animation.PlaybackManager
 import endorh.unican.gcrv.animation.TimeLine
+import endorh.unican.gcrv.animation.TimeRange
+import endorh.unican.gcrv.animation.TimeStamp
 import endorh.unican.gcrv.scene.*
 import endorh.unican.gcrv.renderers.line.BresenhamRenderer
 import endorh.unican.gcrv.renderers.line.BresenhamRendererBreadth
@@ -23,12 +26,29 @@ import endorh.unican.gcrv.scene.property.AnimProperty
 import endorh.unican.gcrv.renderers.*
 import endorh.unican.gcrv.renderers.spline.VariableInterpolationAntiAliasSplineRenderer
 import endorh.unican.gcrv.scene.objects.GroupObject2D
+import endorh.unican.gcrv.serialization.JsonFormat
+import endorh.unican.gcrv.util.HttpRequestException
+import endorh.unican.gcrv.util.httpGet
 import endorh.unican.gcrv.windows.editor.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.serializer
 import kotlin.coroutines.CoroutineContext
+
+expect object PlatformEditorDefaults {
+    val canvasBuffersNum: Int
+}
+
+@Serializable
+data class ProjectData(
+    val objects: Object2DStack,
+    val timeRange: TimeRange = TimeRange(TimeStamp(0), TimeStamp(10)),
+    val fps: Int = 12
+)
 
 class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope {
     override val coroutineContext: CoroutineContext = Dispatchers.Default
@@ -69,8 +89,34 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
         mutableStateOf(false).affectsCanvas(),
     )
     val timeLine = mutableStateOf(TimeLine())
+    val fps = mutableStateOf(30)
     val playbackManager = mutableStateOf(PlaybackManager(coroutineContext, timeLine.value))
     val selectedProperties = mutableStateOf<List<AnimProperty<*>>>(emptyList())
+
+    fun loadProjectFromJSON(text: String) {
+        launch {
+            try {
+                val projectData = JsonFormat.decodeFromString(serializer<ProjectData>(), text)
+                loadProjectData(projectData)
+            } catch (e: Exception) {
+                println("Failed to load project: $e")
+                e.printStackTrace()
+                throw e
+            }
+        }
+    }
+
+    fun saveProjectToJSON(): String {
+        return JsonFormat.encodeToString(serializer<ProjectData>(), saveProjectData())
+    }
+
+    fun loadProjectData(data: ProjectData) {
+        timeLine.value.renderedRange = data.timeRange.copy()
+        fps.value = data.fps
+        loadStack(data.objects)
+    }
+
+    fun saveProjectData() = ProjectData(objectStack, timeLine.value.renderedRange.copy(), fps.value)
 
     fun loadStack(stack: Object2DStack) {
         objectStack.objects.clear()
@@ -143,6 +189,8 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
         gizmoPass
     ), listOf(previewPipeline))
 
+    val canvasBuffersNum = mutableStateOf(PlatformEditorDefaults.canvasBuffersNum)
+
     init {
        for (p in pipeline.renderPasses)
            p.enabled.affectsCanvas()
@@ -196,6 +244,43 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
 
     override suspend fun Assets.loadResources(ctx: KoolContext) {
         // exampleImage = loadTexture2d("${SimpleSceneLoader.materialPath}/uv_checker_map.jpg")
+    }
+
+    override fun loadStartupParams(params: Map<String, String>) {
+        params["project"]?.let {
+            loadDemoProject(it)
+        }
+        if ("autoplay" in params) launch {
+            delay(100L)
+            playbackManager.value.play()
+        }
+    }
+
+    fun loadDemoProject(project: String) {
+        println("Loading project: $project")
+        if (project.startsWith("http://") || project.startsWith("https://")) {
+            launch {
+                val data = try {
+                    httpGet(project)
+                } catch (e: HttpRequestException) {
+                    println("Failed to load project: ${e.message}")
+                    return@launch
+                }
+
+                try {
+                    loadProjectFromJSON(data)
+                } catch (e: SerializationException) {
+                    println("Failed to load project, invalid project file format: ${e.message}")
+                    e.printStackTrace()
+                    return@launch
+                }
+
+                println("Loaded project from params")
+            }
+        } else {
+
+        }
+        // Assets.loadBlob("demos/$project.json")
     }
 
     override fun Scene.setupMainScene(ctx: KoolContext) {
