@@ -23,3 +23,17 @@ gradle-app.setting
 
 ## IntelliJ settings
 .idea
+
+## Kotlin/JS
+dist/
+kotlin-js-store/
+
+## Kool
+# Local storage
+.storage/
+
+# HTTP cache
+.httpCache/
+
+## Local archives
+*.zip
