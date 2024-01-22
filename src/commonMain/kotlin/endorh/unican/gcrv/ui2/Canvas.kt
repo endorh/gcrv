@@ -3,6 +3,7 @@ package endorh.unican.gcrv.ui2
 import de.fabmax.kool.KoolContext
 import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec2f
+import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.pipeline.Shader
 import de.fabmax.kool.pipeline.Texture2d
@@ -100,6 +101,8 @@ fun <T : CanvasModifier> T.canvasZ(canvasZ: Int): T = apply {
 fun <T : CanvasModifier> T.canvasSize(size: CanvasSize): T = apply {
    canvasSize = size
 }
+
+val <S: CanvasScope> S.canvasSize get() = modifier.canvas?.let { Vec2i(it.width, it.height) } ?: Vec2i(1, 1)
 
 fun <T : CanvasModifier> T.customShader(shader: Shader): T = apply {
    customShader = shader

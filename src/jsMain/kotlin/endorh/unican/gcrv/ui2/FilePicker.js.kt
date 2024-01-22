@@ -11,17 +11,22 @@ import org.w3c.files.FileReader
 actual open class FilePickerNode actual constructor(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface), FilePickerScope {
    override val modifier = FilePickerModifier(surface)
    private val path = mutableStateOf("")
+   private var label = "Browse"
+
+   actual fun setup(label: String) {
+      this.label = label
+   }
 
    override fun applyDefaults() {
       super.applyDefaults()
 
       val mod = modifier
       Row(Grow.Std) {
-         BlendTextField(path.use()) {
+         if (mod.showFileName) BlendTextField(path.use()) {
             modifier.isEditable(false).width(Grow.Std)
          }
 
-         Button("Browse") {
+         Button(label) {
             modifier.onClick {
                HTMLFileDialog.loadSingleFile(mod.fileFilters).then {
                   it?.let {
@@ -41,13 +46,18 @@ actual open class FilePickerNode actual constructor(parent: UiNode?, surface: Ui
 
 actual open class FileSaverNode actual constructor(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface), FileSaverScope {
    override val modifier = FileSaverModifier(surface)
+   private var label = "Save"
+
+   actual fun setup(label: String) {
+      this.label = label
+   }
 
    override fun applyDefaults() {
       super.applyDefaults()
 
       val mod = modifier
       Row(Grow.Std) {
-         Button("Save") {
+         Button(label) {
             modifier.width(Grow.Std).onClick {
                mod.onFileRequested?.invoke()?.let { contents ->
                   when (contents) {

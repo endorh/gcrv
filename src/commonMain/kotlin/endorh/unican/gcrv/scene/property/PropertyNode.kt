@@ -95,10 +95,10 @@ sealed interface PropertyMap : Map<String, PropertyNode<*>> {
       }
 
       override fun deserialize(decoder: Decoder): PropertyMap = decoder.decodeStructure(descriptor) {
-            decodeProperties(descriptor, 0) {
-               throw SerializationException("Unexpected serial index: $it")
-            }
+         decodeProperties(descriptor, 0) {
+            throw SerializationException("Unexpected serial index: $it")
          }
+      }
    }
 }
 

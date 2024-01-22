@@ -1,6 +1,5 @@
 package endorh.unican.gcrv.scene.objects
 
-import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.modules.ui2.UiScope
 import de.fabmax.kool.modules.ui2.mutableStateOf
@@ -10,8 +9,7 @@ import endorh.unican.gcrv.renderers.PointRenderPassInputScope
 import endorh.unican.gcrv.renderers.point.CircleAntiAliasPointRenderer
 import endorh.unican.gcrv.renderers.point.SquarePointRenderer
 import endorh.unican.gcrv.scene.*
-import endorh.unican.gcrv.scene.ControlPointGizmo.ControlPointGizmoStyle
-import endorh.unican.gcrv.scene.ControlPointGizmo.GizmoDragListener
+import endorh.unican.gcrv.scene.ControlPointGizmo.Style
 import endorh.unican.gcrv.scene.property.*
 import endorh.unican.gcrv.ui2.TRANSPARENT
 import endorh.unican.gcrv.util.*
@@ -46,12 +44,12 @@ open class CubicSplineObject2D(
       return (listOf(drawGizmo { transform ->
          val ps = controlPoints.entries
          val style = style.polygonStyle
-         renderLine(Line2D((transform * ps[0].value).toVec2i(), (transform * ps[1].value).toVec2i(), style))
+         renderLine(LineSegment2i((transform * ps[0].value).toVec2i(), (transform * ps[1].value).toVec2i(), style))
          for (i in 2..ps.size - 2 step 3) {
             val mid = (transform * ps[i + 1].value).toVec2i()
-            renderLine(Line2D((transform * ps[i].value).toVec2i(), mid, style))
+            renderLine(LineSegment2i((transform * ps[i].value).toVec2i(), mid, style))
             if (i < ps.size - 2)
-            renderLine(Line2D(mid, (transform * ps[i+2].value).toVec2i(), style))
+            renderLine(LineSegment2i(mid, (transform * ps[i+2].value).toVec2i(), style))
          }
       }) + controlPoints.entries.mapIndexed { i, p ->
          gizmo(p, when (i) {
@@ -149,33 +147,35 @@ open class CubicSplineObject2D(
       }
    }
 
-   protected open val startGizmoStyle = ControlPointGizmoStyle(
+   protected open val startGizmoStyle = Style(
       PointStyle(Color.RED, 15F, CircleAntiAliasPointRenderer))
-   protected open val controlGizmoStyle = ControlPointGizmoStyle(
+   protected open val controlGizmoStyle = Style(
       PointStyle(Color.LIGHT_GRAY.withAlpha(0.7F), 13F, CircleAntiAliasPointRenderer))
-   protected open val midGizmoStyle = ControlPointGizmoStyle(
+   protected open val midGizmoStyle = Style(
       PointStyle(Color.GREEN, 11F, SquarePointRenderer))
-   protected open val endGizmoStyle = ControlPointGizmoStyle(
+   protected open val endGizmoStyle = Style(
       PointStyle(Color.BLUE, 15F, CircleAntiAliasPointRenderer))
-   protected open val outGizmoStyle = ControlPointGizmoStyle(
+   protected open val outGizmoStyle = Style(
       PointStyle(Color.GRAY, 13F, CircleAntiAliasPointRenderer))
+
+   override fun toString() = "Spline$controlPoints"
 
    class Renderer(val spline: CubicSplineObject2D) : Renderer2D {
       override fun CubicSplineRenderPassInputScope.renderCubicSplines() {
          val ps = spline.controlPoints
          for (i in 0 until ps.size - 3 step 3)
-            accept(CubicSpline2D(
+            accept(CubicSpline2f(
                ps[i].value, ps[i+1].value, ps[i+2].value, ps[i+3].value, spline.style.cubicSplineStyle))
       }
 
       override fun PointRenderPassInputScope.renderPoints() {
          val ps = spline.controlPoints
-         if (ps.size > 0) accept(Point2D(ps[0].value.toVec2i(), spline.style.startStyle))
+         if (ps.size > 0) accept(Point2f(ps[0].value, spline.style.startStyle))
          val mid = spline.style.midStyle
          for (i in 1..ps.size - 3 step 3) {
-            // accept(Point2D(ps[i].value.toVec2i(), mid))
-            // accept(Point2D(ps[i+1].value.toVec2i(), mid))
-            accept(Point2D(ps[i+2].value.toVec2i(), if (i < ps.size - 3) mid else spline.style.endStyle))
+            // accept(Point2f(ps[i].value, mid))
+            // accept(Point2f(ps[i+1].value, mid))
+            accept(Point2f(ps[i+2].value, if (i < ps.size - 3) mid else spline.style.endStyle))
          }
       }
    }

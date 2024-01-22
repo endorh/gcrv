@@ -8,13 +8,7 @@ import de.fabmax.kool.modules.ui2.mutableStateListOf
 import de.fabmax.kool.modules.ui2.mutableStateOf
 import endorh.unican.gcrv.animation.TimeLine
 import endorh.unican.gcrv.renderers.*
-import endorh.unican.gcrv.scene.ControlPointGizmo.ControlPointGizmoStyle
-import endorh.unican.gcrv.scene.ControlPointGizmo.GizmoDragListener
-import endorh.unican.gcrv.scene.Object2DStack.Serializer.listSerializer
-import endorh.unican.gcrv.scene.objects.CubicSplineObject2D
-import endorh.unican.gcrv.scene.objects.GroupObject2D
-import endorh.unican.gcrv.scene.objects.LineObject2D
-import endorh.unican.gcrv.scene.objects.PointObject2D
+import endorh.unican.gcrv.scene.objects.*
 import endorh.unican.gcrv.scene.property.*
 import endorh.unican.gcrv.serialization.SavableSerializer
 import endorh.unican.gcrv.transformations.Transform2D
@@ -38,11 +32,13 @@ import kotlin.reflect.KProperty0
 class Object2DStack {
    val objects: MutableSerialStateList<Object2D> = mutableStateListOf()
 
-   fun collectColliders(ignoreTransforms: Boolean = false): List<Pair<Collider, Object2D>> {
+   fun collectColliders(filteredObjects: Collection<Object2D>? = null, ignoreTransforms: Boolean = false, transform: Transform2D? = null): List<Pair<TransformedCollider2D, Object2D>> {
       val collector = TaggedColliderPassInputScopeImpl<Object2D>()
+      transform?.let { collector.push(it) }
       fun render(o: Object2D) {
          if (!ignoreTransforms) collector.push(o.aggregatedTransform)
-         collector.accept(o.collider to o)
+         if (filteredObjects == null || o in filteredObjects)
+            collector.accept(o.collider to o)
          for (child in o.children) render(child)
          if (!ignoreTransforms) collector.pop()
       }
@@ -50,8 +46,9 @@ class Object2DStack {
       return collector.collected
    }
 
-   fun collectGizmos(selected: Collection<Object2D>? = null, ignoreTransforms: Boolean = false): List<TransformedGizmo> {
+   fun collectGizmos(selected: Collection<Object2D>? = null, ignoreTransforms: Boolean = false, transform: Transform2D? = null): List<TransformedGizmo> {
       val collector = TransformedGizmoPassInputScopeImpl()
+      transform?.let { collector.push(it) }
       fun render(o: Object2D) {
          if (!ignoreTransforms) collector.push(o.aggregatedTransform)
          if (selected == null || o in selected)
@@ -79,6 +76,9 @@ val Object2DTypes = listOf(
    PointObject2D.Type,
    LineObject2D.Type,
    CubicSplineObject2D.Type,
+   TriangleObject2D.Type,
+   PolygonObject2D.Type,
+   PolyLineObject2D.Type,
    GroupObject2D.Type,
 )
 
@@ -108,7 +108,7 @@ abstract class Object2D(val type: Object2DType<out Object2D>) : PropertyHolder, 
          .map { it.transform.localize(geometricCenter) }
          .fold(Transform2D.identity) { acc, t -> t * acc }
    open val geometricCenter: Vec2f get() = Vec2f.ZERO
-   open val collider: Collider get() = Collider.None
+   open val collider: Collider2D get() = Collider2D.Empty
 
    @Suppress("UNCHECKED_CAST")
    operator fun <T> get(prop: KProperty<T>) = properties[prop.name] as? AnimProperty<T>
@@ -133,19 +133,19 @@ abstract class Object2D(val type: Object2DType<out Object2D>) : PropertyHolder, 
       }
 
    protected fun gizmo(
-      prop: KMutableProperty0<Vec2f>, style: ControlPointGizmoStyle = ControlPointGizmoStyle(),
+      prop: KMutableProperty0<Vec2f>, style: ControlPointGizmo.Style = ControlPointGizmo.Style(),
       onDrag: GizmoDragListener? = null
    ) = ControlPointGizmo(prop::get, style, GizmoDragListener { pos ->
       prop.set(pos)
    }.redirect(onDrag))
    protected fun gizmo(
-      prop: KProperty0<MutableList<Vec2f>>, i: Int, style: ControlPointGizmoStyle = ControlPointGizmoStyle(),
+      prop: KProperty0<MutableList<Vec2f>>, i: Int, style: ControlPointGizmo.Style = ControlPointGizmo.Style(),
       onDrag: GizmoDragListener? = null
    ) = ControlPointGizmo({ prop.get()[i] }, style, GizmoDragListener {
       prop.get()[i] = it
    }.redirect(onDrag))
    protected fun gizmo(
-      prop: Vec2fProperty, style: ControlPointGizmoStyle = ControlPointGizmoStyle(),
+      prop: Vec2fProperty, style: ControlPointGizmo.Style = ControlPointGizmo.Style(),
       onDrag: GizmoDragListener? = null
    ) = ControlPointGizmo({ prop.value }, style, GizmoDragListener {
       prop.value = it
@@ -213,17 +213,24 @@ abstract class Object2D(val type: Object2DType<out Object2D>) : PropertyHolder, 
    }
 }
 
+fun <T: Object2D> T.copy(): T {
+   val data = save()
+   return type.create().apply { load(data) } as T
+}
+
 interface Renderer2D {
    fun <D> RenderPassInputScope<D>.render() = when(this) {
       is WireframeRenderPassInputScope -> renderWireframe()
       is PointRenderPassInputScope -> renderPoints()
       is CubicSplineRenderPassInputScope -> renderCubicSplines()
+      is PolyFillRenderPassInputScope -> renderPolyFills()
       else -> Unit
    }
 
    fun WireframeRenderPassInputScope.renderWireframe() {}
    fun PointRenderPassInputScope.renderPoints() {}
    fun CubicSplineRenderPassInputScope.renderCubicSplines() {}
+   fun PolyFillRenderPassInputScope.renderPolyFills() {}
    object None : Renderer2D
 }
 

@@ -46,6 +46,32 @@ class FractalsMenuWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("Menu
                   launchOrBringToTop(multi) { JuliaWindow(scene) }
                }
             }
+
+            Button("Recursive Fractals") {
+               launcherButtonStyle("Recursive fractal visualization")
+               onClick {
+                  launchOrBringToTop(multi) { RecursiveFractalsWindow(scene) }
+               }
+            }
+
+            Button("IFS Canvas") {
+               launcherButtonStyle("Iterated Function System fractal visualization")
+               onClick {
+                  launchOrBringToTop(multi) { IFSRenderWindow(scene) }
+               }
+            }
+            Button("IFS Editor") {
+               launcherButtonStyle("Iterated Function System fractal editor")
+               onClick {
+                  launchOrBringToTop(multi) { IFSControlWindow(scene) }
+               }
+            }
+            Button("IFS List") {
+               launcherButtonStyle("Iterated Function System fractal function list")
+               onClick {
+                  launchOrBringToTop(multi) { IFSControlWindow(scene) }
+               }
+            }
          }
 
          Section("Demo Windows", false) {

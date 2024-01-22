@@ -64,7 +64,7 @@
             1.0,
             1.0
           ],
-          "shearY": 0.0
+          "shearX": 0.0
         }
       ],
       "globalTransforms": [
@@ -78,7 +78,7 @@
             1.0,
             1.0
           ],
-          "shearY": 0.0
+          "shearX": 0.0
         },
         {
           "translate": [
@@ -97,7 +97,7 @@
             1.0,
             1.0
           ],
-          "shearY": 0.0
+          "shearX": 0.0
         }
       ],
       "controlPoints": [

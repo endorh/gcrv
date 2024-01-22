@@ -11,6 +11,23 @@ import endorh.unican.gcrv.util.F
 import endorh.unican.gcrv.util.I
 import kotlin.reflect.KProperty
 
+class FillStyleProperty(
+   fillStyle: PolyFillStyle = PolyFillStyle(),
+) : CompoundAnimProperty() {
+   var color by color(fillStyle.color)
+   var renderer by nullOption(PolyFillRenderers, fillStyle.renderer)
+
+   override val showExpanded get() = false
+   operator fun getValue(thisRef: Any?, property: KProperty<*>) = this
+
+   var fillStyle
+      get() = PolyFillStyle(color, renderer)
+      set(value) {
+         color = value.color
+         renderer = value.renderer
+      }
+}
+
 class LineStyleProperty(
    lineStyle: LineStyle = LineStyle(),
    start: PointStyle = PointStyle(),
@@ -23,7 +40,7 @@ class LineStyleProperty(
    val start by pointStyle(start)
    val end by pointStyle(end)
 
-   override val showExpanded: Boolean get() = false
+   override val showExpanded get() = false
    operator fun getValue(thisRef: Any?, property: KProperty<*>) = this
 
    var lineStyle

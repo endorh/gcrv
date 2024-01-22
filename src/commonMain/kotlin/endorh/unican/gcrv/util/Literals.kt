@@ -1,5 +1,9 @@
 package endorh.unican.gcrv.util
 
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import com.ionspin.kotlin.bignum.decimal.toBigDecimal
+import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.toBigInteger
 import de.fabmax.kool.modules.ksl.lang.KslScalarExpression
 import de.fabmax.kool.modules.ksl.lang.KslTypeInt1
 import de.fabmax.kool.modules.ksl.lang.KslTypeUint1
@@ -61,16 +65,20 @@ inline val Color.RGBA: RGBA get() = ((r * 255F).toUInt() and 0xFFu shl 24 or
 inline val Int.U get() = toUInt()
 inline val Int.L get() = toLong()
 inline val Int.UL get() = toULong()
+inline val Int.BI get() = toBigInteger()
 inline val Long.U get() = toULong()
 inline val Long.I get() = toInt()
 inline val Long.UI get() = toUInt()
+inline val Long.BI get() = toBigInteger()
 
 inline val UInt.I get() = toInt()
 inline val UInt.L get() = toLong()
 inline val UInt.UL get() = toULong()
+inline val UInt.BI get() = toBigInteger()
 inline val ULong.I get() = toInt()
 inline val ULong.UI get() = toUInt()
 inline val ULong.L get() = toLong()
+inline val ULong.BI get() = toBigInteger()
 
 inline val Boolean.B get() = if (this) 1.B else 0.B
 inline val Boolean.UB get() = if (this) 1U.B else 0U.B
@@ -89,17 +97,29 @@ inline val UInt.D get() = toDouble()
 inline val Long.D get() = toDouble()
 inline val ULong.D get() = toDouble()
 
+inline val Int.BD get() = toBigDecimal()
+inline val UInt.BD get() = if (I < 0) BigDecimal.fromBigInteger(toBigInteger()) else I.toBigDecimal()
+inline val Long.BD get() = toBigDecimal()
+inline val ULong.BD get() = if (L < 0) BigDecimal.fromBigInteger(toBigInteger()) else L.toBigDecimal()
+
 inline val Float.I get() = toInt()
 inline val Float.UI get() = toUInt()
 inline val Float.L get() = toLong()
 inline val Float.UL get() = toULong()
 inline val Float.D get() = toDouble()
+inline val Float.BI get() = BigInteger.tryFromFloat(this)
+inline val Float.BD get() = toBigDecimal()
 
 inline val Double.I get() = toInt()
 inline val Double.UI get() = toUInt()
 inline val Double.L get() = toLong()
 inline val Double.UL get() = toULong()
 inline val Double.F get() = toFloat()
+inline val Double.BI get() = BigInteger.tryFromDouble(this)
+inline val Double.BD get() = toBigDecimal()
+
+inline val Float.NaNtoZero get() = if (isNaN()) 0F else this
+inline val Double.NaNtoZero get() = if (isNaN()) 0F else this
 
 
 inline val KslScalarExpression<KslTypeUint1>.F get() = toFloat1()

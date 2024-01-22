@@ -12,7 +12,7 @@ class TransformProperty : CompoundAnimProperty() {
    var translate by vec2f(Vec2f.ZERO)
    var rotation by float(0F)
    var scale by vec2f(Vec2f(1F, 1F))
-   var shearY by float(0F)
+   var shearX by float(0F)
 
    operator fun getValue(thisRef: Any?, property: KProperty<*>) = this
 
@@ -20,14 +20,14 @@ class TransformProperty : CompoundAnimProperty() {
       translate = t.translate
       rotation = deg(t.rotation)
       scale = t.scale
-      shearY = t.shearY
+      shearX = t.shearX
    }
 
    fun setFrom(t: Transform2D) = setFromTaggedTransform(TaggedTransform2D.fromTransform(t))
 
    val transform get() = with(Transform2D) {
-      translate(translate) * rotate(rad(rotation)) * shearY(shearY) * scale(scale)
+      translate(translate) * rotate(rad(rotation)) * scale(scale) * shearX(shearX)
    }
 
-   val taggedTransform get() = TaggedTransform2D(rotation, scale, translate, shearY)
+   val taggedTransform get() = TaggedTransform2D(rotation, scale, translate, shearX)
 }

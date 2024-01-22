@@ -1,7 +1,7 @@
 package endorh.unican.gcrv.renderers.point
 
 import endorh.unican.gcrv.scene.PixelRendererContext
-import endorh.unican.gcrv.scene.Point2D
+import endorh.unican.gcrv.scene.Point2i
 import endorh.unican.gcrv.scene.Point2DRenderer
 import endorh.unican.gcrv.util.component1
 import endorh.unican.gcrv.util.component2
@@ -18,7 +18,7 @@ import kotlin.math.sqrt
 object HollowCircleAntiAliasPointRenderer : Point2DRenderer {
    override val name = "Hollow Circle (antialiased)"
 
-   override fun PixelRendererContext.render(point: Point2D) {
+   override fun PixelRendererContext.render(point: Point2i) {
       val size = point.style.size.roundToInt()
       val hs = size / 2
       val ihs = hs * 4 / 5

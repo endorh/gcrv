@@ -1,6 +1,6 @@
 package endorh.unican.gcrv.renderers.line
 
-import endorh.unican.gcrv.scene.Line2D
+import endorh.unican.gcrv.scene.LineSegment2i
 import endorh.unican.gcrv.scene.Line2DRenderer
 import endorh.unican.gcrv.scene.PixelRendererContext
 import endorh.unican.gcrv.util.F
@@ -14,7 +14,7 @@ import kotlin.math.floor
 object DigitalDifferentialAnalyzerRenderer : Line2DRenderer {
    override val name = "DDA (Digital Differential Analyzer)"
 
-   override fun PixelRendererContext.render(line: Line2D) {
+   override fun PixelRendererContext.render(line: LineSegment2i) {
       val (xS, yS, xE, yE) = line.coords
       val dx = xE - xS
       val dy = yE - yS

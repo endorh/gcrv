@@ -9,7 +9,6 @@ import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.modules.ui2.docking.Dock
 import de.fabmax.kool.modules.ui2.docking.UiDockable
-import de.fabmax.kool.pipeline.PlatformAttributeProps
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.animation.PlaybackManager
@@ -24,7 +23,8 @@ import endorh.unican.gcrv.ui2.BufferCanvas
 import endorh.unican.gcrv.windows.*
 import endorh.unican.gcrv.scene.property.AnimProperty
 import endorh.unican.gcrv.renderers.*
-import endorh.unican.gcrv.renderers.spline.VariableInterpolationAntiAliasSplineRenderer
+import endorh.unican.gcrv.renderers.fill.poly.ConvexTestFillRenderer
+import endorh.unican.gcrv.renderers.spline.VariableInterpolationSplineRenderer
 import endorh.unican.gcrv.scene.objects.GroupObject2D
 import endorh.unican.gcrv.serialization.JsonFormat
 import endorh.unican.gcrv.util.HttpRequestException
@@ -35,7 +35,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.serializer
 import kotlin.coroutines.CoroutineContext
 
@@ -64,8 +63,14 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
     }
 
     val canvasUpdates = MutableStateFlow(CanvasUpdateEvent())
+    val polyFillRenderingSettings = PolyFillRenderingSettings(
+        mutableStateOf<PolyFill2DRenderer>(ConvexTestFillRenderer).affectsCanvas(),
+        mutableStateOf(false).affectsCanvas(),
+        mutableStateOf(Color.GRAY).affectsCanvas(),
+        mutableStateOf(false).affectsCanvas(),
+    )
     val cubicSplineRenderingSettings = CubicSplineRenderingSettings(
-        mutableStateOf<CubicSpline2DRenderer>(VariableInterpolationAntiAliasSplineRenderer).affectsCanvas(),
+        mutableStateOf<CubicSpline2DRenderer>(VariableInterpolationSplineRenderer).affectsCanvas(),
         mutableStateOf(false).affectsCanvas(),
         mutableStateOf(Color.WHITE).affectsCanvas(),
         mutableStateOf(false).affectsCanvas(),
@@ -149,7 +154,7 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
     val axesPass = AxesRenderPass2D()
     val geoSplinePass = SplineRenderPass2D(
         CubicSplineRenderingSettings(
-            mutableStateOf(VariableInterpolationAntiAliasSplineRenderer),
+            mutableStateOf(VariableInterpolationSplineRenderer),
             mutableStateOf(true),
             mutableStateOf(Color.GRAY.withAlpha(0.4F)),
             mutableStateOf(true),
@@ -172,12 +177,11 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
             mutableStateOf(5),
             mutableStateOf(true),
         ), ignoreTransforms = true)
+    val polyFillPass = PolyFillRenderPass2D(polyFillRenderingSettings)
     val splinePass = SplineRenderPass2D(cubicSplineRenderingSettings)
     val wireframePass = WireframeRenderPass2D(wireframeSettings)
     val pointPass = PointRenderPass2D(pointSettings)
-    val gizmoPass = GizmoRenderPass2D().also {
-        it.renderedObjects = selectedObjects
-    }
+    val gizmoPass = GizmoRenderPass2D(false, selectedObjects)
 
     val previewPipeline = RenderingPipeline2D(previewStack, listOf(
         splinePass, wireframePass, pointPass, gizmoPass
@@ -185,6 +189,7 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
     val pipeline = RenderingPipeline2D(objectStack, listOf(
         gridPass, axesPass,
         geoSplinePass, geoWireframePass, geoPointPass,
+        polyFillPass,
         splinePass, wireframePass, pointPass,
         gizmoPass
     ), listOf(previewPipeline))

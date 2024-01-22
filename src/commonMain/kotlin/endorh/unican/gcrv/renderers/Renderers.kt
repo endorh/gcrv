@@ -2,16 +2,16 @@ package endorh.unican.gcrv.renderers
 
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
+import endorh.unican.gcrv.renderers.fill.poly.ConvexTestFillRenderer
+import endorh.unican.gcrv.renderers.fill.poly.NoOpFillRenderer
 import endorh.unican.gcrv.scene.CubicSpline2DRenderer
 import endorh.unican.gcrv.scene.Line2DRenderer
 import endorh.unican.gcrv.scene.Point2DRenderer
 import endorh.unican.gcrv.renderers.line.*
-import endorh.unican.gcrv.renderers.point.CircleAntiAliasPointRenderer
-import endorh.unican.gcrv.renderers.point.CirclePointRenderer
-import endorh.unican.gcrv.renderers.point.HollowCircleAntiAliasPointRenderer
-import endorh.unican.gcrv.renderers.point.SquarePointRenderer
+import endorh.unican.gcrv.renderers.point.*
 import endorh.unican.gcrv.renderers.spline.DebugSplineRenderer
-import endorh.unican.gcrv.renderers.spline.VariableInterpolationAntiAliasSplineRenderer
+import endorh.unican.gcrv.renderers.spline.VariableInterpolationSplineRenderer
+import endorh.unican.gcrv.scene.PolyFill2DRenderer
 import endorh.unican.gcrv.ui2.mix
 
 val LineRenderers: List<Line2DRenderer> = mutableListOf(
@@ -28,6 +28,7 @@ val LineRenderers: List<Line2DRenderer> = mutableListOf(
 
 val PointRenderers: List<Point2DRenderer> = mutableListOf(
    SquarePointRenderer,
+   TiltedSquarePointRenderer,
    CirclePointRenderer,
    CircleAntiAliasPointRenderer,
    HollowCircleAntiAliasPointRenderer,
@@ -35,7 +36,12 @@ val PointRenderers: List<Point2DRenderer> = mutableListOf(
 
 val CubicSplineRenderers: List<CubicSpline2DRenderer> = mutableListOf(
    DebugSplineRenderer,
-   VariableInterpolationAntiAliasSplineRenderer,
+   VariableInterpolationSplineRenderer,
+)
+
+val PolyFillRenderers: List<PolyFill2DRenderer> = mutableListOf(
+   NoOpFillRenderer,
+   ConvexTestFillRenderer
 )
 
 interface PresentableObject {

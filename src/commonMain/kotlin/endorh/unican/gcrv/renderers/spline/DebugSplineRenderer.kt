@@ -12,15 +12,15 @@ import kotlin.math.roundToInt
 object DebugSplineRenderer : CubicSpline2DRenderer {
    override val name = "Debug"
 
-   override fun PixelRendererContext.render(spline: CubicSpline2D) {
+   override fun PixelRendererContext.render(spline: CubicSpline2f) {
       val lineStyle = LineStyle(spline.style.color.withAlpha(0.5F), 1F, BresenhamRenderer)
-      renderLine(Line2D(spline.p0.toVec2i(), spline.p1.toVec2i(), lineStyle))
-      renderLine(Line2D(spline.p1.toVec2i(), spline.p2.toVec2i(), lineStyle))
-      renderLine(Line2D(spline.p2.toVec2i(), spline.p3.toVec2i(), lineStyle))
-      renderPoint(Point2D(spline.p0.toVec2i(), spline.style.startStyle))
-      renderPoint(Point2D(spline.p1.toVec2i(), spline.style.midStyle))
-      renderPoint(Point2D(spline.p2.toVec2i(), spline.style.midStyle))
-      renderPoint(Point2D(spline.p3.toVec2i(), spline.style.endStyle))
+      renderLine(LineSegment2i(spline.p0.toVec2i(), spline.p1.toVec2i(), lineStyle))
+      renderLine(LineSegment2i(spline.p1.toVec2i(), spline.p2.toVec2i(), lineStyle))
+      renderLine(LineSegment2i(spline.p2.toVec2i(), spline.p3.toVec2i(), lineStyle))
+      renderPoint(Point2i(spline.p0.toVec2i(), spline.style.startStyle))
+      renderPoint(Point2i(spline.p1.toVec2i(), spline.style.midStyle))
+      renderPoint(Point2i(spline.p2.toVec2i(), spline.style.midStyle))
+      renderPoint(Point2i(spline.p3.toVec2i(), spline.style.endStyle))
 
       val p = MutableVec2f()
       for (t in 0..100) {

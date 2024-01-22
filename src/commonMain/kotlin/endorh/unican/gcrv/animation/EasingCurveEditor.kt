@@ -4,7 +4,7 @@ import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.scene.CanvasPixelRendererContext
-import endorh.unican.gcrv.scene.Point2D
+import endorh.unican.gcrv.scene.Point2i
 import endorh.unican.gcrv.scene.PointStyle
 import endorh.unican.gcrv.renderers.point.CircleAntiAliasPointRenderer
 import endorh.unican.gcrv.ui2.*
@@ -14,13 +14,14 @@ import kotlin.math.roundToInt
 fun UiScope.EasingCurveEditor(
    easing: Easing,
    size: Int,
+   onChange: (Easing) -> Unit = {},
    curveColor: Color = Color.GRAY,
    borderColor: Color = Color.DARK_GRAY,
    gridColor: Color = Color.DARK_GRAY.withAlpha(0.7F),
    controlPointColor: Color = Color.LIGHT_GRAY,
    block: CanvasScope.() -> Unit
 ) {
-   val panel = remember { EasingCurveEditorPanel(easing, size, curveColor, borderColor, gridColor, controlPointColor, block) }
+   val panel = remember { EasingCurveEditorPanel(easing, size, onChange, curveColor, borderColor, gridColor, controlPointColor, block) }
    panel.setup(easing, size, curveColor, borderColor, gridColor, controlPointColor, block)
    panel()
 }
@@ -28,6 +29,7 @@ fun UiScope.EasingCurveEditor(
 class EasingCurveEditorPanel(
    var easing: Easing,
    var size: Int,
+   val onChange: (Easing) -> Unit = {},
    var curveColor: Color = Color.GRAY,
    var borderColor: Color = Color.LIGHT_GRAY,
    var gridColor: Color = Color.DARK_GRAY.withAlpha(0.7F),
@@ -81,14 +83,15 @@ class EasingCurveEditorPanel(
             val m = 15F / size.F
             easing.controlPoints.asSequence().sortedBy {
                it.value.distance(pos)
-            }.filter { it.value.distance(pos) <= m }.firstOrNull()?.let {
+            }.filter { it.value.distance(pos) <= m || it.value.y !in -0.5F..1.5F }.firstOrNull()?.let {
                draggedControlPoint.value = it
+               onChange(easing)
             }
-         }
-         .onDrag { ev ->
+         }.onDrag { ev ->
             draggedControlPoint.value?.let {
                val pos = ev.canvasPosition / size.F
                it.value = pos
+               onChange(easing)
                drawCanvas()
             }
          }.onDragEnd { ev ->
@@ -96,6 +99,7 @@ class EasingCurveEditorPanel(
                val pos = ev.canvasPosition / size.F
                it.value = pos
                draggedControlPoint.value = null
+               onChange(easing)
                drawCanvas()
             }
          }
@@ -153,8 +157,8 @@ class EasingCurveEditorPanel(
             color = controlPointColor
             with(CircleAntiAliasPointRenderer) {
                val style = PointStyle(color = controlPointColor, size = 9F)
-               render(Point2D(Vec2i(0, 0), style))
-               render(Point2D(Vec2i(size - 1, size - 1), style))
+               render(Point2i(Vec2i(0, 0), style))
+               render(Point2i(Vec2i(size - 1, size - 1), style))
             }
 
             with (easing) {
@@ -165,9 +169,9 @@ class EasingCurveEditorPanel(
                val v = (c.value * size.F).toVec2i()
                with(CircleAntiAliasPointRenderer) {
                   color = controlPointColor
-                  render(Point2D(v, PointStyle(color = color, size = 15F)))
+                  render(Point2i(v, PointStyle(color = color, size = 15F)))
                   color = Color.DARK_GRAY
-                  render(Point2D(v, PointStyle(color = color, size = 9F)))
+                  render(Point2i(v, PointStyle(color = color, size = 9F)))
                }
             }
          }

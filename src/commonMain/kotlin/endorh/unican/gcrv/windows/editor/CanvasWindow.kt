@@ -6,14 +6,18 @@ import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.*
-import de.fabmax.kool.util.*
+import de.fabmax.kool.util.Color
+import de.fabmax.kool.util.launchOnMainThread
 import endorh.unican.gcrv.EditorScene
+import endorh.unican.gcrv.scene.Object2D
+import endorh.unican.gcrv.scene.TransformedCollider2D
 import endorh.unican.gcrv.scene.TransformedGizmo
 import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.*
 import endorh.unican.gcrv.windows.BaseWindow
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlin.time.Duration
 import kotlin.time.measureTime
 
@@ -182,9 +186,12 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
                                 val pos = ev.canvasPosition
                                 scene.objectStack.collectColliders()
                                     .asSequence()
-                                    .filter { it.first.fastContains(pos.toVec2i()) }
-                                    .sortedBy { it.first.center.toVec2f().distance(pos) }
-                                    .firstOrNull()?.let { (c, o) ->
+                                    .filter { pos in it.first }
+                                    .sortedWith(
+                                        compareBy<Pair<TransformedCollider2D, Object2D>> { it.first.dimension }
+                                            .thenBy { it.first.area }
+                                            .thenBy { it.first.centerDistance(pos) }
+                                    ).firstOrNull()?.let { (c, o) ->
                                         if (ModifierState.ctrlPressed) {
                                             scene.selectedObjects.toggle(o)
                                         } else {
@@ -248,12 +255,14 @@ class CanvasWindow(scene: EditorScene) : BaseWindow<EditorScene>("Canvas", scene
                             } ?: run {
                                 // Start dragging a gizmo
                                 val pos = ev.canvasPosition
-                                val intPos = pos.toVec2i()
                                 val gizmos = scene.objectStack.collectGizmos(scene.selectedObjects)
                                 gizmos.asSequence()
-                                    .filter { intPos in it.collider }
-                                    .sortedBy { it.collider.centerDistance(intPos) }
-                                    .firstOrNull()?.let {
+                                    .filter { pos in it.collider }
+                                    .sortedWith(
+                                        compareBy<TransformedGizmo> { it.collider.dimension }
+                                            .thenBy { it.collider.area }
+                                            .thenBy { it.collider.centerDistance(pos) }
+                                    ).firstOrNull()?.let {
                                         it.dragStart(pos)
                                         lastDraggedGizmo = it
                                     }

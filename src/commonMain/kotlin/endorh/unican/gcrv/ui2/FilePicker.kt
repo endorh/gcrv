@@ -39,23 +39,27 @@ interface FileSaverScope : UiScope {
 }
 
 open class FilePickerModifier(surface: UiSurface) : UiModifier(surface) {
+   var showFileName: Boolean by property(false)
    var dialogTitle: String by property("Choose file")
    var fileFilters: List<FileFilter> by property(listOf(FileFilter.ALL))
    var onFileChosen: ((FileReadHandle) -> Unit)? by property(null)
 }
 
 open class FileSaverModifier(surface: UiSurface) : UiModifier(surface) {
+   var showFileName: Boolean by property(false)
    var dialogTitle: String by property("Save file")
    var fileFilters: List<FileFilter> by property(listOf(FileFilter.ALL))
    var suggestedFileName: String by property("")
    var onFileRequested: (() -> FileWriteContents?)? by property(null)
 }
 
+fun <T: FilePickerModifier> T.showFileName(showFileName: Boolean = true) = apply { this.showFileName = false }
 fun <T: FilePickerModifier> T.dialogTitle(title: String) = apply { dialogTitle = title }
 fun <T: FilePickerModifier> T.fileFilters(vararg filters: FileFilter) = apply { fileFilters = filters.toList() }
 fun <T: FilePickerModifier> T.fileFilters(filters: List<FileFilter>) = apply { fileFilters = filters }
 fun <T: FilePickerModifier> T.onFileChosen(block: ((FileReadHandle) -> Unit)? = null) = apply { onFileChosen = block }
 
+fun <T: FileSaverModifier> T.showFileName(showFileName: Boolean = true) = apply { this.showFileName = false }
 fun <T: FileSaverModifier> T.dialogTitle(title: String) = apply { dialogTitle = title }
 fun <T: FileSaverModifier> T.suggestedFileName(name: String) = apply { suggestedFileName = name }
 fun <T: FileSaverModifier> T.fileFilters(vararg filters: FileFilter) = apply { fileFilters = filters.toList() }
@@ -70,13 +74,15 @@ fun FileSaverScope.onFileDataRequested(block: () -> ByteArray?) = modifier.onFil
    block()?.let { FileWriteContents.ByteArrayContents(it) }
 }
 
-inline fun UiScope.FilePicker(scopeName: String? = null, block: FilePickerScope.() -> Unit = {}): FilePickerScope =
+inline fun UiScope.FilePicker(label: String = "Browse", scopeName: String? = null, block: FilePickerScope.() -> Unit = {}): FilePickerScope =
    uiNode.createChild(scopeName, FilePickerNode::class, FilePickerNode.factory).apply {
+      setup(label)
       block()
    }
 
-inline fun UiScope.FileSaver(scopeName: String? = null, block: FileSaverScope.() -> Unit = {}): FileSaverScope =
+inline fun UiScope.FileSaver(label: String = "Save", scopeName: String? = null, block: FileSaverScope.() -> Unit = {}): FileSaverScope =
    uiNode.createChild(scopeName, FileSaverNode::class, FileSaverNode.factory).apply {
+      setup(label)
       block()
    }
 
@@ -84,12 +90,16 @@ expect open class FilePickerNode(parent: UiNode?, surface: UiSurface) : UiNode, 
    companion object {
       val factory: (UiNode?, UiSurface) -> FilePickerNode
    }
+
+   fun setup(label: String)
 }
 
 expect open class FileSaverNode(parent: UiNode?, surface: UiSurface) : UiNode, FileSaverScope {
    companion object {
       val factory: (UiNode?, UiSurface) -> FileSaverNode
    }
+
+   fun setup(label: String)
 }
 
 interface FileReadHandle {

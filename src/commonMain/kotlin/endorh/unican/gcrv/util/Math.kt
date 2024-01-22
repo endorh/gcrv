@@ -17,6 +17,7 @@ fun Float.roundDecimals(decimals: Int): Float = (this * 10F.pow(decimals)).round
 
 val Int.squared get() = this * this
 val Float.squared get() = this * this
+val Double.squared get() = this * this
 
 infix fun Int.pow(exp: Int) = when (this) {
    0 -> 0

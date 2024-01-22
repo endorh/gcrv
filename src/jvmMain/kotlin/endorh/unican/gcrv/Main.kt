@@ -16,7 +16,7 @@ fun main(args: Array<String>) = KoolApplication(
 ) { ctx ->
     var scene: String
     scene = "line-algorithms"
-    // scene = "fractals"
+    scene = "fractals"
     val params = parseArgs(args, mapOf(
         "s" to "scene",
         "p" to "project",

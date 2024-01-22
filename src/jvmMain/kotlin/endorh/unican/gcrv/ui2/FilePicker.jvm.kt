@@ -7,13 +7,18 @@ import java.io.File
 actual open class FilePickerNode actual constructor(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface), FilePickerScope {
    override val modifier: FilePickerModifier = FilePickerModifier(surface)
    val path = mutableStateOf("")
+   private var label: String = "Browse"
+
+   actual fun setup(label: String) {
+      this.label = label
+   }
 
    override fun applyDefaults() {
       super.applyDefaults()
 
       val mod = modifier
       Row(Grow.Std) {
-         BlendTextField(path.use()) {
+         if (mod.showFileName) BlendTextField(path.use()) {
             modifier.width(Grow.Std).textAlignX(AlignmentX.End).onChange { path ->
                this@FilePickerNode.path.value = path
                File(path).takeIf { it.isFile }?.let { file ->
@@ -22,7 +27,7 @@ actual open class FilePickerNode actual constructor(parent: UiNode?, surface: Ui
             }
          }
 
-         Button("Browse") {
+         Button(label) {
             onClick {
                NativeFileDialog.loadSingleFile(mod.fileFilters.map {
                   NativeFileDialog.FileFilter(it.description, it.extensions)
@@ -42,19 +47,26 @@ actual open class FilePickerNode actual constructor(parent: UiNode?, surface: Ui
 
 actual open class FileSaverNode actual constructor(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface), FileSaverScope {
    override val modifier = FileSaverModifier(surface)
+   private var label: String = "Save"
+
+   actual fun setup(label: String) {
+      this.label = label
+   }
 
    override fun applyDefaults() {
       super.applyDefaults()
 
       val mod = modifier
       Row(Grow.Std) {
-         BlendTextField(mod.suggestedFileName) {
-            modifier.width(Grow.Std).textAlignX(AlignmentX.End).onChange {
-               mod.suggestedFileName = it
+         if (mod.showFileName) {
+            BlendTextField(mod.suggestedFileName) {
+               modifier.width(Grow.Std).textAlignX(AlignmentX.End).onChange {
+                  mod.suggestedFileName = it
+               }
             }
          }
 
-         Button("Save") {
+         Button(label) {
             onClick {
                mod.onFileRequested?.invoke()?.let { contents ->
                   NativeFileDialog.saveSingleFile(mod.suggestedFileName, mod.fileFilters.map {

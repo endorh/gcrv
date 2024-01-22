@@ -3,15 +3,13 @@ package endorh.unican.gcrv.serialization
 import endorh.unican.gcrv.animation.Easing
 import endorh.unican.gcrv.animation.EasingType
 import endorh.unican.gcrv.animation.EasingTypes
-import endorh.unican.gcrv.scene.CubicSpline2DRenderer
-import endorh.unican.gcrv.scene.Line2DRenderer
-import endorh.unican.gcrv.scene.Point2DRenderer
+import endorh.unican.gcrv.fractals.RecursiveGeoFractalRenderer
+import endorh.unican.gcrv.fractals.RecursiveGeoFractalRenderers
 import endorh.unican.gcrv.renderers.CubicSplineRenderers
 import endorh.unican.gcrv.renderers.LineRenderers
 import endorh.unican.gcrv.renderers.PointRenderers
-import endorh.unican.gcrv.scene.Object2D
-import endorh.unican.gcrv.scene.Object2DType
-import endorh.unican.gcrv.scene.Object2DTypes
+import endorh.unican.gcrv.renderers.PolyFillRenderers
+import endorh.unican.gcrv.scene.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -47,6 +45,18 @@ val module = SerializersModule {
       @Suppress("UNCHECKED_CAST")
       for (renderer in CubicSplineRenderers)
          subclass(renderer::class as KClass<CubicSpline2DRenderer>, renderer::class.serializer() as KSerializer<CubicSpline2DRenderer>)
+   }
+
+   polymorphic(RecursiveGeoFractalRenderer::class) {
+      @Suppress("UNCHECKED_CAST")
+      for (renderer in RecursiveGeoFractalRenderers)
+         subclass(renderer::class as KClass<RecursiveGeoFractalRenderer>, renderer::class.serializer() as KSerializer<RecursiveGeoFractalRenderer>)
+   }
+
+   polymorphic(PolyFill2DRenderer::class) {
+      @Suppress("UNCHECKED_CAST")
+      for (renderer in PolyFillRenderers)
+         subclass(renderer::class as KClass<PolyFill2DRenderer>, renderer::class.serializer() as KSerializer<PolyFill2DRenderer>)
    }
 
    polymorphic(Object2D::class) {

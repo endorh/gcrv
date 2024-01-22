@@ -7,7 +7,7 @@ import de.fabmax.kool.modules.ui2.MutableState
 import de.fabmax.kool.modules.ui2.UiScope
 import de.fabmax.kool.modules.ui2.UiSurface
 import de.fabmax.kool.util.Color
-import endorh.unican.gcrv.scene.Line2D
+import endorh.unican.gcrv.scene.LineSegment2i
 import endorh.unican.gcrv.scene.LineStyle
 import endorh.unican.gcrv.scene.PixelRendererContext
 import endorh.unican.gcrv.renderers.PresentableObject
@@ -218,7 +218,7 @@ abstract class Easing(val type: EasingType<*>) {
       val amplitude get() = period_amplitude.y
 
       override fun PixelRendererContext.drawGizmos(size: Int) {
-         renderLine(Line2D(Vec2i(0, 0), (period_amplitude * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
+         renderLine(LineSegment2i(Vec2i(0, 0), (period_amplitude * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
       }
 
       override fun ease(t: Float): Float {
@@ -250,7 +250,7 @@ abstract class Easing(val type: EasingType<*>) {
       }
 
       override fun PixelRendererContext.drawGizmos(size: Int) {
-         renderLine(Line2D(Vec2i(0, 0), (period_amplitude * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
+         renderLine(LineSegment2i(Vec2i(0, 0), (period_amplitude * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
       }
 
       object Type : EasingType<SinusoidalEasing>("Periodic", { SinusoidalEasing() })
@@ -265,8 +265,8 @@ abstract class Easing(val type: EasingType<*>) {
       var end by control(e)
 
       override fun PixelRendererContext.drawGizmos(size: Int) {
-         renderLine(Line2D(Vec2i(0, 0), (start * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
-         renderLine(Line2D(Vec2i(size - 1, size - 1), (end * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
+         renderLine(LineSegment2i(Vec2i(0, 0), (start * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
+         renderLine(LineSegment2i(Vec2i(size - 1, size - 1), (end * size.F).toVec2i(), LineStyle(Color.LIGHT_GRAY)))
       }
 
       var xS = s.x

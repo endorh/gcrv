@@ -29,14 +29,15 @@ object Settings {
     }
 
     val selectedScene = MutableStateSettings("gcrv.selectedScene", Scenes.defaultScene) { it }
+    val gizmoSize = MutableStateSettings("gcrv.gizmoSize", 15F) { it.toFloatOrNull() ?: 15F }
 
     fun loadSettings() {
         settings.forEach { it.load() }
     }
 
-    class MutableStateSettings<T>(val key: String, initValue: T, val parser: (String) -> T)
-        : MutableStateValue<T>(initValue)
-    {
+    class MutableStateSettings<T>(
+        val key: String, initValue: T, val parser: (String) -> T
+    ) : MutableStateValue<T>(initValue) {
         init {
             settings += this
             onChange {

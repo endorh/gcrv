@@ -14,10 +14,12 @@ import endorh.unican.gcrv.util.uint1VarAssignInt1
 
 class MandelbrotFPShader : KslShader(Model(), pipelineConfig) {
    var iterations by uniform1i("uIterations", 1)
+   var alpha by uniform1f("uAlpha", 1F)
 
    private class Model : KslProgram("Mandelbrot simple precission floating point shader") {
       init {
          val iterations = uniformInt1("uIterations")
+         val alpha = uniformFloat1("uAlpha")
          // val gradient = uniformFloat1Array("gradient", 64)
          val texCoords = interStageFloat2()
          val screenPos = interStageFloat2()
@@ -64,7 +66,6 @@ class MandelbrotFPShader : KslShader(Model(), pipelineConfig) {
                      i set i + 1u.const
                   }
                   val color = float4Var()
-                  color.a set 1F.const
                   `if`(i ge iters) {
                      color.r set 0F.const
                      color.g set maxNormSquared / 8F.const
@@ -78,7 +79,7 @@ class MandelbrotFPShader : KslShader(Model(), pipelineConfig) {
                      color.g set 2F.const * rr * bb
                      color.b set bb
                   }
-                  colorOutput(color.rgb * color.a, color.a)
+                  colorOutput(color.rgb, alpha)
                }.`else` {
                   discard()
                }

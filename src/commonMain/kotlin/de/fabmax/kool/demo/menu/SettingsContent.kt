@@ -4,6 +4,7 @@ import de.fabmax.kool.demo.*
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.MsdfFont
+import endorh.unican.gcrv.ui2.LabeledFloatField
 
 class SettingsContent(val menu: SceneMenu) : Composable {
     override fun UiScope.compose() = Column {
@@ -44,5 +45,7 @@ class SettingsContent(val menu: SceneMenu) : Composable {
         menu.sceneLoader.activeDemo?.let {
             LabeledSwitch("Show demo menu", it.isMenu)
         }
+
+        LabeledFloatField("Gizmo Size (px)", Settings.gizmoSize)
     }
 }

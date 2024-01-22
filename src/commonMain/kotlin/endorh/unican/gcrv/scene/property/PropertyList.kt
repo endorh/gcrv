@@ -20,7 +20,7 @@ class PropertyList<S, P: PropertyNode<S>>(
    override var holder: PropertyHolder? = null
       set(value) {
          field = value
-         for (p in entries) p.init(p.name, value)
+         for (p in entries) p.init(name, value)
       }
    override lateinit var name: String
    override var priority: Int = 0

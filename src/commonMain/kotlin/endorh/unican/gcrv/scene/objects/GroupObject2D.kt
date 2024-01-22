@@ -21,6 +21,8 @@ class GroupObject2D : Object2D(Type) {
       return Vec2f(x / s, y / s)
    }
 
+   override fun toString() = "Group[${children.joinToString()}]"
+
    companion object Type : Object2DType<GroupObject2D>("group") {
       private var groupCount = 0
       override fun generateName() = "Group ${++groupCount}"

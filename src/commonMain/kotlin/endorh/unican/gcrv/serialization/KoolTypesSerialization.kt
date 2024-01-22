@@ -17,6 +17,21 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.random.Random
+
+typealias Vec2d = @Serializable(Vec2dSerializer::class) de.fabmax.kool.math.Vec2d
+object Vec2dSerializer : KSerializer<Vec2d> {
+   val listSerializer = ListSerializer(Double.serializer())
+   override val descriptor = SerialDescriptor("Vec2d", listSerializer.descriptor)
+   override fun serialize(encoder: Encoder, value: Vec2d) {
+      encoder.encodeSerializableValue(listSerializer, listOf(value.x, value.y))
+   }
+   override fun deserialize(decoder: Decoder): Vec2d {
+      val list = decoder.decodeSerializableValue(listSerializer)
+      if (list.size != 2) throw SerializationException("Invalid Vec2d: $list (list size is not 2!)")
+      return Vec2d(list[0], list[1])
+   }
+}
 
 typealias Vec2f = @Serializable(Vec2fSerializer::class) de.fabmax.kool.math.Vec2f
 object Vec2fSerializer : KSerializer<Vec2f> {
@@ -43,6 +58,20 @@ object Vec2iSerializer : KSerializer<Vec2i> {
       val list = decoder.decodeSerializableValue(listSerializer)
       if (list.size != 2) throw SerializationException("Invalid Vec2i: $list (list size is not 2!)")
       return Vec2i(list[0], list[1])
+   }
+}
+
+typealias Vec3d = @Serializable(Vec3dSerializer::class) de.fabmax.kool.math.Vec3d
+object Vec3dSerializer : KSerializer<Vec3d> {
+   val listSerializer = ListSerializer(Double.serializer())
+   override val descriptor = SerialDescriptor("Vec3d", listSerializer.descriptor)
+   override fun serialize(encoder: Encoder, value: Vec3d) {
+      encoder.encodeSerializableValue(listSerializer, listOf(value.x, value.y, value.z))
+   }
+   override fun deserialize(decoder: Decoder): Vec3d {
+      val list = decoder.decodeSerializableValue(listSerializer)
+      if (list.size != 3) throw SerializationException("Invalid Vec3d: $list (list size is not 3!)")
+      return Vec3d(list[0], list[1], list[2])
    }
 }
 
@@ -74,6 +103,8 @@ object Vec3iSerializer : KSerializer<Vec3i> {
    }
 }
 
+fun de.fabmax.kool.util.Color.Companion.randomHue() =
+   de.fabmax.kool.util.Color.Hsv(Random.nextFloat() * 360F, 1F, 1F).toSrgb()
 typealias Color = @Serializable(ColorSerializer::class) de.fabmax.kool.util.Color
 object ColorSerializer : KSerializer<Color> {
    override val descriptor = PrimitiveSerialDescriptor("Color", PrimitiveKind.STRING)

@@ -9,6 +9,7 @@ import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.renderers.OptionIdxPicker
 import endorh.unican.gcrv.renderers.OptionalOptionIdxPicker
 import endorh.unican.gcrv.scene.CubicSplineStyleProperty
+import endorh.unican.gcrv.scene.FillStyleProperty
 import endorh.unican.gcrv.scene.LineStyleProperty
 import endorh.unican.gcrv.scene.PointStyleProperty
 import endorh.unican.gcrv.transformations.TransformProperty
@@ -38,6 +39,7 @@ typealias color = ColorProperty
 typealias lineStyle = LineStyleProperty
 typealias pointStyle = PointStyleProperty
 typealias cubicSplineStyle = CubicSplineStyleProperty
+typealias fillStyle = FillStyleProperty
 typealias transform = TransformProperty
 typealias option<T> = OptionProperty<T>
 typealias nullOption<T> = NullableOptionProperty<T>

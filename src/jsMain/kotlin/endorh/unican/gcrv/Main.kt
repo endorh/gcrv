@@ -1,4 +1,4 @@
-package endorh.unican.gcrv.line_algorithms
+package endorh.unican.gcrv
 
 import de.fabmax.kool.KoolApplication
 import de.fabmax.kool.KoolConfig

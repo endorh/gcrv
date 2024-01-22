@@ -1,6 +1,6 @@
 package endorh.unican.gcrv.renderers.line
 
-import endorh.unican.gcrv.scene.Line2D
+import endorh.unican.gcrv.scene.LineSegment2i
 import endorh.unican.gcrv.scene.Line2DRenderer
 import endorh.unican.gcrv.scene.PixelRendererContext
 import endorh.unican.gcrv.util.towards
@@ -13,7 +13,7 @@ import kotlin.math.roundToInt
 object BresenhamRendererBreadth : Line2DRenderer {
    override val name = "Bresenham (with breadth)"
 
-   override fun PixelRendererContext.render(line: Line2D) {
+   override fun PixelRendererContext.render(line: LineSegment2i) {
       val width = line.style.breadth.roundToInt()
       if (width == 0) return
       val (xS, yS, xE, yE) = line.coords

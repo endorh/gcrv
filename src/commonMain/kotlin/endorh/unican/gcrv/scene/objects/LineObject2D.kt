@@ -1,7 +1,6 @@
 package endorh.unican.gcrv.scene.objects
 
 import de.fabmax.kool.math.Vec2f
-import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.modules.ui2.UiScope
 import de.fabmax.kool.modules.ui2.mutableStateOf
 import de.fabmax.kool.util.Color
@@ -12,11 +11,10 @@ import endorh.unican.gcrv.renderers.WireframeRenderPassInputScope
 import endorh.unican.gcrv.scene.*
 import endorh.unican.gcrv.util.div
 import endorh.unican.gcrv.util.plus
-import endorh.unican.gcrv.util.toVec2i
 
 class LineObject2D(
-   start: Vec2i = Vec2i.ZERO,
-   end: Vec2i = Vec2i.X_AXIS,
+   start: Vec2f = Vec2f.ZERO,
+   end: Vec2f = Vec2f.X_AXIS,
    style: LineStyle = LineStyle(Color.WHITE),
    startStyle: PointStyle = PointStyle(Color.WHITE, 5F),
    endStyle: PointStyle = PointStyle(Color.WHITE, 5F),
@@ -28,18 +26,16 @@ class LineObject2D(
    override val geometricCenter: Vec2f get() = (start + end) / 2F
    override val renderers: List<Renderer2D> = listOf(Renderer(this))
    override val gizmos = listOf(gizmo(::start), gizmo(::end))
-   override val collider: Collider get() = Line2iCollider(Line2D(start.toVec2i(), end.toVec2i()), 15)
+   override val collider: Collider2D get() = LineSegment2fCollider(LineSegment2f(start, end))
+
+   override fun toString() = "Line[$start, $end]"
 
    class Renderer(val line: LineObject2D) : Renderer2D {
-      override fun WireframeRenderPassInputScope.renderWireframe() {
-         accept(Line2D(line.start.toVec2i(), line.end.toVec2i(), line.style.lineStyle))
-      }
-      override fun PointRenderPassInputScope.renderPoints() {
-         accept(
-            Point2D(line.start.toVec2i(), line.style.start.pointStyle),
-            Point2D(line.end.toVec2i(), line.style.end.pointStyle)
-         )
-      }
+      override fun WireframeRenderPassInputScope.renderWireframe() = accept(
+         LineSegment2f(line.start, line.end, line.style.lineStyle))
+      override fun PointRenderPassInputScope.renderPoints() = accept(
+         Point2f(line.start, line.style.start.pointStyle),
+         Point2f(line.end, line.style.end.pointStyle))
    }
 
    object Type : Object2DType<LineObject2D>("line") {

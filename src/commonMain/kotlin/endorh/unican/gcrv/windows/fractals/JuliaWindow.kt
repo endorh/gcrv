@@ -8,6 +8,7 @@ import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.FractalsScene
 import endorh.unican.gcrv.serialization.Vec2f
 import endorh.unican.gcrv.shaders.JuliaFPShader
+import endorh.unican.gcrv.shaders.MandelbrotFPShader
 import endorh.unican.gcrv.ui2.*
 import endorh.unican.gcrv.util.*
 import endorh.unican.gcrv.windows.BaseWindow
@@ -64,9 +65,17 @@ class JuliaWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("Julia Fract
    val juliaIterations = mutableStateOf(10000UL).onChange {
       juliaShader.iterations = it.toInt()
    }
+   val mandelbrotAlpha = mutableStateOf(0F).onChange {
+      mandelbrotShader.alpha = it.clamp(0F, 1F)
+   }
 
    val juliaShader: JuliaFPShader = JuliaFPShader().apply {
       iterations = juliaIterations.value.toInt()
+   }
+
+   val mandelbrotShader: MandelbrotFPShader = MandelbrotFPShader().apply {
+      iterations = 64
+      alpha = mandelbrotAlpha.value
    }
 
    fun zoomBy(delta: Double) {
@@ -112,6 +121,15 @@ class JuliaWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("Julia Fract
             modifier.margin(start = sizes.smallGap)
          }
 
+         Slider(mandelbrotAlpha.use(), 0F, 1F) {
+            modifier.onChange {
+               mandelbrotAlpha.value = it
+            }
+         }
+         Text("Mandelbrot Alpha: ${mandelbrotAlpha.use().roundToString(2)}") {
+            modifier.margin(start = sizes.smallGap)
+         }
+
          Vec2fField(juliaCenter.use().toVec2f(), { juliaCenter.value = it.toVec2d() }) {
             modifier.width(150.dp)
          }
@@ -147,6 +165,7 @@ class JuliaWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("Julia Fract
                   val x = it.pointer.dragDeltaX / imageWidth * 2.0
                   val y = it.pointer.dragDeltaY / imageHeight * 2.0
                   juliaCenter.value = Vec2d(centerDragStart.x + x, centerDragStart.y - y)
+                  // val relPosition = Vec2f(it.position.x / imageWidth, it.position.y / imageHeight)
                }
             }.onDragEnd {
                dragPanning = false
@@ -177,7 +196,38 @@ class JuliaWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("Julia Fract
             modifier
                .shader(juliaShader)
                .size(Grow.Std, Grow.Std)
+               .align(AlignmentX.Start, AlignmentY.Top)
                .backgroundColor(Color.LIGHT_GREEN)
+               .uvRect(uvRect)
+         }
+         if (mandelbrotAlpha.use() > 0F) ShaderImage {
+            val zoomLevel = zoomLevel.use()
+            val c = zoomCenter.use().toMutableVec2f()
+            val w: Float
+            val h: Float
+            val rectAR = rect.height / rect.width
+            val imageAR = imageHeight / imageWidth
+            if (imageAR > rectAR) {
+               w = (rect.width / zoomLevel).F
+               h = (rect.height / zoomLevel * imageAR / rectAR).F
+            } else {
+               w = (rect.width / zoomLevel * rectAR / imageAR).F
+               h = (rect.height / zoomLevel).F
+            }
+
+            val sx = c.x - w / 2
+            val sy = c.y - h / 2
+            val uvRect = UvRect(
+               Vec2f(sx, sy),
+               Vec2f(sx + w, sy),
+               Vec2f(sx, sy + h),
+               Vec2f(sx + w, sy + h)
+            )
+            modifier
+               .shader(mandelbrotShader)
+               .zLayer(10)
+               .align(AlignmentX.Start, AlignmentY.Top)
+               .size(Grow.Std, Grow.Std)
                .uvRect(uvRect)
          }
       }

@@ -19,7 +19,7 @@ class TransformWindow(scene: EditorScene) : BaseWindow<EditorScene>("Transform",
    val shearX = mutableStateOf(0F)
 
    val transform get() = with(Transform2D) {
-      translate(translate.value) * rotate(rad(rotation.value)) * shearX(shearX.value) * scale(scale.value)
+      translate(translate.value) * rotate(rad(rotation.value)) * scale(scale.value) * shearX(shearX.value)
    }
 
    val taggedTransform get() = TaggedTransform2D(rotation.value, scale.value, translate.value, shearX.value)
@@ -42,7 +42,7 @@ class TransformWindow(scene: EditorScene) : BaseWindow<EditorScene>("Transform",
                Vec2fField(scale.use(), { scale.value = it }) { it() }
             }
 
-            LabeledField("Shear") {
+            LabeledField("Shear X") {
                FloatField(shearX.use(), { shearX.value = it }) { it() }
             }
          }

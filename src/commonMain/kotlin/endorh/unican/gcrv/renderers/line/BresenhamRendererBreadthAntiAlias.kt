@@ -1,6 +1,6 @@
 package endorh.unican.gcrv.renderers.line
 
-import endorh.unican.gcrv.scene.Line2D
+import endorh.unican.gcrv.scene.LineSegment2i
 import endorh.unican.gcrv.scene.Line2DRenderer
 import endorh.unican.gcrv.scene.PixelRendererContext
 import endorh.unican.gcrv.util.F
@@ -14,7 +14,7 @@ import kotlin.math.roundToInt
 object BresenhamRendererBreadthAntiAlias : Line2DRenderer {
    override val name = "Bresenham (antialiasing)"
 
-   override fun PixelRendererContext.render(line: Line2D) {
+   override fun PixelRendererContext.render(line: LineSegment2i) {
       val width = line.style.breadth.roundToInt() + 2
       val hw = width / 2
 
