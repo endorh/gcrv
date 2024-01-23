@@ -26,7 +26,7 @@ object SierpinskyCarpetRenderer : RecursiveGeoFractalRenderer {
       LineObject2D(Vec2f(-0.5F, -0.5F), Vec2f(0.5F, 0.5F)))
    override val extraGeometry = listOf(PolygonObject2D(listOf(
       Vec2f(-0.5F, -0.5F), Vec2f(-0.5F, 0.5F),
-      Vec2f(0.5F, 0.5F), Vec2f(0.5F, -0.5F))))
+      Vec2f(0.5F, 0.5F), Vec2f(0.5F, -0.5F)), fillStyle=polygonStyle))
    override val finalStepAsOutput: Boolean get() = false
 
    override fun step(geometry: Object2D, step: Int, subStep: Int): RecursiveGeoFractalStepResult {
@@ -42,7 +42,7 @@ object SierpinskyCarpetRenderer : RecursiveGeoFractalRenderer {
       val output = listOf(
          PolygonObject2D(listOf(
             Vec2f(x13, y13), Vec2f(x23, y13),
-            Vec2f(x23, y23), Vec2f(x13, y23))))
+            Vec2f(x23, y23), Vec2f(x13, y23)), fillStyle=polygonStyle))
       val nextGeometry = listOf(
          LineObject2D(Vec2f(minX, minY), Vec2f(x13, y13)),
          LineObject2D(Vec2f(x13, minY), Vec2f(x23, y13)),

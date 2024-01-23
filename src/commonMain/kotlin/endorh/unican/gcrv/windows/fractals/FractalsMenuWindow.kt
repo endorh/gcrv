@@ -63,13 +63,26 @@ class FractalsMenuWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("Menu
             Button("IFS Editor") {
                launcherButtonStyle("Iterated Function System fractal editor")
                onClick {
-                  launchOrBringToTop(multi) { IFSControlWindow(scene) }
+                  launchOrBringToTop(multi) { IFSEditWindow(scene) }
                }
             }
             Button("IFS List") {
                launcherButtonStyle("Iterated Function System fractal function list")
                onClick {
                   launchOrBringToTop(multi) { IFSControlWindow(scene) }
+               }
+            }
+
+            Button("L-System Canvas") {
+               launcherButtonStyle("L-System visualization")
+               onClick {
+                  launchOrBringToTop(multi) { LSystemRenderWindow(scene) }
+               }
+            }
+            Button("L-System Editor") {
+               launcherButtonStyle("L-System editor")
+               onClick {
+                  launchOrBringToTop(multi) { LSystemEditWindow(scene) }
                }
             }
          }
