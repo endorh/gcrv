@@ -5,6 +5,7 @@ import de.fabmax.kool.util.Color
 import endorh.unican.gcrv.EditorScene
 import endorh.unican.gcrv.scene.objects.GroupObject2D
 import endorh.unican.gcrv.scene.Object2D
+import endorh.unican.gcrv.ui2.StringField
 import endorh.unican.gcrv.ui2.TRANSPARENT
 import endorh.unican.gcrv.util.ModifierState.ctrlPressed
 import endorh.unican.gcrv.util.ModifierState.shiftPressed
@@ -24,7 +25,6 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow<EditorScene>("Outliner", s
         modifier.size(Grow.Std, Grow.Std)
         Row {
             modifier.margin(2.dp).padding(4.dp)
-
             Button("Group") {
                 modifier.onClick {
                     val group = GroupObject2D()
@@ -55,14 +55,15 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow<EditorScene>("Outliner", s
             isScrollableHorizontal = false,
         ) {
             modifier.padding(4.dp)
-            items(scene.objectStack.objects.use()) { obj ->
+            items(scene.objectStack.objects.use(surface)) { obj ->
                 renderItem(obj)
             }
         }
     }
 
     fun UiScope.renderItem(obj: Object2D) {
-        Column(Grow.Std) {
+        var editingName by remember(false)
+        Column(Grow.Std, scopeName = obj.name) {
             Row(Grow.Std) {
                 modifier
                     .margin(2.dp)
@@ -76,8 +77,13 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow<EditorScene>("Outliner", s
                     )
                     .padding(4.dp)
                     .onClick {
-                        if (!ctrlPressed && !shiftPressed)
+                        if (!ctrlPressed && !shiftPressed) {
+                            if (selectedObjects.singleOrNull() == obj) {
+                                editingName = true
+                                return@onClick
+                            }
                             selectedObjects.clear()
+                        }
                         if (shiftPressed) {
                             selectedObjects.lastOrNull()?.let { last ->
                                 val idx = scene.objectStack.objects.indexOf(obj)
@@ -96,12 +102,44 @@ class OutlinerWindow(scene: EditorScene) : BaseWindow<EditorScene>("Outliner", s
                         } else selectedObjects.add(obj)
                         scene.updateCanvas()
                     }
-                Text(obj[obj::name].use(surface)) {}
+                if (obj.children.isNotEmpty()) {
+                    Arrow(if (obj[obj::collapseChildren].use(surface)) 0F else 90F) {
+                        modifier
+                            .size(sizes.gap * 1.5F, sizes.gap * 1.5F)
+                            .margin(horizontal = sizes.gap)
+                            .alignY(AlignmentY.Center)
+                            .onClick { obj.collapseChildren = !obj.collapseChildren }
+                    }
+                }
+                if (editingName) {
+                    var requestedFocus by remember(false)
+                    var editedName by remember(obj.name)
+                    StringField(editedName, {
+                        editedName = it
+                    }, padding=0.dp) {
+                        modifier.onEnterPressed {
+                            obj.name = editedName
+                            requestedFocus = false
+                            editingName = false
+                        }
+                        if (!requestedFocus) {
+                            editedName = obj.name
+                            requestFocus()
+                            requestedFocus = true
+                        }
+                        isFocused.onChange { if (!it) {
+                            editingName = false
+                            requestedFocus = false
+                        } }
+                    }
+                } else {
+                    Text(obj[obj::name].use(surface)) {}
+                }
                 Text(obj.type.name.toTitleCase()) {
                     modifier.width(Grow.Std).textAlignX(AlignmentX.End).textColor(colors.secondary)
                 }
             }
-            if (obj.children.isNotEmpty()) Column(Grow.Std) {
+            if (!obj[obj::collapseChildren].use(surface) && obj.children.isNotEmpty()) Column(Grow.Std) {
                 modifier.margin(start=8.dp)
                 for (children in obj.children)
                     renderItem(children)

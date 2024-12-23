@@ -53,14 +53,18 @@ class IFSControlWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("IFS Li
             modifier.width(Grow(0.5F)).margin(start=sizes.smallGap)
             onClick {
                Clipboard.getStringFromClipboard { it?.let { text ->
-                  println("Text: $text")
                   IFS.importFromText(text)?.let { ifs ->
-                     println("IFS: $ifs")
                      scene.launch {
                         scene.ifsDraft.load(ifs)
                      }
                   }
                }}
+            }
+         }
+         Button("Copy") {
+            modifier.width(Grow(0.5F)).margin(start=sizes.smallGap)
+            onClick {
+               Clipboard.copyToClipboard(IFS.exportToText(scene.ifs))
             }
          }
       }

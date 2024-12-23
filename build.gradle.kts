@@ -13,7 +13,7 @@ repositories {
 
 kotlin {
     jvm {
-        jvmToolchain(11)
+        jvmToolchain(17)
 
         @Suppress("OPT_IN_USAGE")
         mainRun {
@@ -89,6 +89,12 @@ kotlin {
                     //   also make sure to use the same version as used by kool-physics
                     //runtimeOnly(files("${projectDir}/libs/physx-jni-natives-windows-cuda-2.2.1.jar"))
                 }
+            }
+        }
+
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit"))
             }
         }
 

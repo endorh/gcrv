@@ -10,9 +10,7 @@ import endorh.unican.gcrv.serialization.Color
 import endorh.unican.gcrv.serialization.randomHue
 import endorh.unican.gcrv.transformations.TaggedTransform2D
 import endorh.unican.gcrv.transformations.Transform2D
-import endorh.unican.gcrv.util.D
-import endorh.unican.gcrv.util.F
-import endorh.unican.gcrv.util.nonPreemptiveMutableStateOf
+import endorh.unican.gcrv.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
@@ -113,11 +111,17 @@ class IFS(
    fun randomFunction() =
       functionMap.ceilingEntry(random.nextFloat() * totalWeight)?.value ?: functionMap.lastValue()
 
+   /**
+    * Render the IFS into an asynchronous flow of points.
+    *
+    * Specify a negative [samples] amount to obtain an infinite flow.
+    */
    fun render(samples: Int, iterationsPerSample: Int, traceFrom: Int = 10): Flow<PointObject2D> {
       if (functions.isEmpty()) return emptyFlow()
       return channelFlow {
          coroutineScope {
-            for (i in 0 until samples) launch(Dispatchers.Default) {
+            var i = 0
+            while (i < samples) launch(Dispatchers.Default) {
                var p = Vec2f(random.nextFloat() * 2F - 1F, random.nextFloat() * 2F - 1F)
                lateinit var c: Color
                for (j in 0 until iterationsPerSample) {
@@ -126,7 +130,7 @@ class IFS(
                   c = if (j == 0) f.color else c.mix(f.color, 0.5F)
                   if (j >= traceFrom) send(PointObject2D(p, PointStyle(c, 1F)))
                }
-            }
+            }.also { i++ }
          }
       }
    }
@@ -166,5 +170,13 @@ class IFS(
             return null
          }
       }
+
+      fun exportToText(ifs: IFS) = "List[\n  ${
+         ifs.functions.joinToString(",\n  ") {
+            val t = it.transform
+            fun Float.R() = roundToString(4, true).removeTrailingZeros() 
+            "List[{{${t.a.R()}, ${t.b.R()}}, {${t.c.R()}, ${t.d.R()}}}, {${t.e.R()}, ${t.f.R()}}]"
+         }
+      }\n];"
    }
 }

@@ -123,5 +123,6 @@ class FractalsScene : SimpleScene("Fractals"), WindowScene, CoroutineScope {
       spawnWindow(IFSControlWindow(scene), "0:row/2:col/0:leaf")
       spawnWindow(IFSEditWindow(scene), "0:row/2:col/1:leaf")
       spawnWindow(LSystemEditWindow(scene), "0:row/2:col/0:leaf")
+      spawnWindow(LSystemRendererEditorWindow(scene), "0:row/2:col/1:leaf")
    }
 }

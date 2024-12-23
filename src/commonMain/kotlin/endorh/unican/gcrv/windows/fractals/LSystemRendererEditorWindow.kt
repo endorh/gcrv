@@ -10,7 +10,7 @@ import endorh.unican.gcrv.serialization.Color
 import endorh.unican.gcrv.ui2.LabeledStringField
 import endorh.unican.gcrv.windows.BaseWindow
 
-class LSystemEditWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("LSystem Editor", scene) {
+class LSystemRendererEditorWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("LSystem Rendering Editor", scene) {
    init {
       windowDockable.setFloatingBounds(width = Dp(420F), height = Dp(380F))
    }
@@ -77,39 +77,6 @@ class LSystemEditWindow(scene: FractalsScene) : BaseWindow<FractalsScene>("LSyst
 
    override fun UiScope.windowContent() = Column(Grow.Std, Grow.Std) {
       modifier.padding(horizontal = sizes.smallGap, vertical = sizes.smallGap)
-
-      // Row {
-      //    modifier.margin(sizes.smallGap)
-      //    FilePicker("Load") {
-      //       modifier.width(Grow(0.5F))
-      //          .showFileName(false)
-      //          .fileFilters(FileFilter.JSON)
-      //          .onFileChosen {
-      //             scene.launch {
-      //                val text = it.readAsText().await()
-      //                val lSystem = JsonFormat.decodeFromString(serializer<LSystem>(), text)
-      //                scene.lSystem.value = lSystem
-      //             }
-      //       }
-      //    }
-      //    FileSaver("Save") {
-      //       modifier.width(Grow(0.5F)).margin(start=sizes.smallGap)
-      //          .showFileName(false)
-      //          .fileFilters(FileFilter.JSON)
-      //          .onFileRequested {
-      //             val ifs = JsonFormat.encodeToString(serializer<LSystem>(), scene.lSystem.value)
-      //             FileWriteContents.StringContents(ifs)
-      //          }
-      //    }
-      //    // Button("Paste") {
-      //    //    modifier.width(Grow(0.5F)).margin(start=sizes.smallGap)
-      //    //    onClick {
-      //    //       Clipboard.getStringFromClipboard { it?.let { text ->
-      //    //          println("Text: $text")
-      //    //       }}
-      //    //    }
-      //    // }
-      // }
 
       LabeledStringField("Axiom", scene.lSystem.use().axiom, { scene.lSystem.value = scene.lSystem.value.copy(axiom=it) }) {
          modifier.margin(top = sizes.smallGap)

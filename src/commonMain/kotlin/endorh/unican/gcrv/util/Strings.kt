@@ -7,7 +7,9 @@ fun String.toTitleCase() =
       .replace(separatorPattern, " ")
 
 
-fun Float.roundToString(decimals: Int = 3): String {
+expect fun Float.format(digits: Int): String
+fun Float.roundToString(decimals: Int = 3, noExp: Boolean = false): String {
+   if (noExp) return format(decimals)
    val s = toString()
    if ('e' in s || 'E' in s) return s
    val i = s.lastIndexOf('.')

@@ -30,7 +30,9 @@ object VariableInterpolationSplineRenderer : CubicSpline2DRenderer {
             t -= step
             spline.valueAt(t, res=p)
          }
-         plotPixel(p.x.roundToInt(), p.y.roundToInt())
+         if (!p.x.isNaN() && !p.y.isNaN()) {
+            plotPixel(p.x.roundToInt(), p.y.roundToInt())
+         } else break
          last.set(p)
       }
    }

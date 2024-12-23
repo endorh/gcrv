@@ -86,6 +86,24 @@ data class LSystem(
       }
       return result
    }
+
+   companion object {
+      private val LINE_PATTERN = Regex(
+         """^(?:(?<weight>\d+\.\d*|\.?\d+):\s*)?(?<pattern>\S+)\s*(?<replacement>.*)$""",
+         RegexOption.MULTILINE)
+      private val COMMENT_PATTERN = Regex("""^\s*#.*""", RegexOption.MULTILINE)
+
+      fun import(text: String) {
+         val axiom = text.lineSequence().firstOrNull() ?: ""
+         val rules = text.lineSequence().drop(1).filter {
+            it.isNotBlank() && !COMMENT_PATTERN.matches(it)
+         }.mapNotNull { LINE_PATTERN.matchEntire(it) }
+      }
+
+      fun export(lSystem: LSystem) {
+
+      }
+   }
 }
 
 interface LSystemRenderingRuleScope {

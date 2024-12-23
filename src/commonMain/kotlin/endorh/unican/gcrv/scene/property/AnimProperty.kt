@@ -13,7 +13,7 @@ import kotlinx.serialization.KSerializer
 import kotlin.jvm.JvmName
 import kotlin.reflect.KProperty
 
-abstract class AnimProperty<T>(defValue: T, val serializer: KSerializer<T>) : MutableState(), PropertyNode<AnimPropertyData<T>> {
+abstract class AnimProperty<T>(private val defValue: T, val serializer: KSerializer<T>) : MutableState(), PropertyNode<AnimPropertyData<T>> {
    override var holder: PropertyHolder? = null
       get() = field.also {
          if (it == null) throw IllegalStateException("Animated property has no property holder")
@@ -27,6 +27,9 @@ abstract class AnimProperty<T>(defValue: T, val serializer: KSerializer<T>) : Mu
    override lateinit var name: String
    override var priority: Int = 0
 
+   override var isInternal: Boolean = false
+      internal set
+   val isDefault get() = timeLine.value == null && plainValue == defValue
    var isUnique = false
       private set
    var isAnimatable = true
@@ -103,7 +106,7 @@ abstract class AnimProperty<T>(defValue: T, val serializer: KSerializer<T>) : Mu
       this.value = value
    }
 
-   override fun toString() = "AnimProperty($value)"
+   override fun toString() = holder?.let { "AnimProperty($value)" } ?: "AnimProperty(<uninitialized>)"
 
    override fun save() =
       if (keyFrames.isNotEmpty()) AnimPropertyData(null, keyFrames)

@@ -44,6 +44,7 @@ open class CubicSplineObject2D(
       return (listOf(drawGizmo { transform ->
          val ps = controlPoints.entries
          val style = style.polygonStyle
+         if (ps.size < 2) return@drawGizmo
          renderLine(LineSegment2i((transform * ps[0].value).toVec2i(), (transform * ps[1].value).toVec2i(), style))
          for (i in 2..ps.size - 2 step 3) {
             val mid = (transform * ps[i + 1].value).toVec2i()

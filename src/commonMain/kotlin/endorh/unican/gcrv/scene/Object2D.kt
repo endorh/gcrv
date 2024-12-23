@@ -2,10 +2,7 @@ package endorh.unican.gcrv.scene
 
 import de.fabmax.kool.math.Vec2f
 import de.fabmax.kool.math.Vec2i
-import de.fabmax.kool.modules.ui2.UiScope
-import de.fabmax.kool.modules.ui2.UiSurface
-import de.fabmax.kool.modules.ui2.mutableStateListOf
-import de.fabmax.kool.modules.ui2.mutableStateOf
+import de.fabmax.kool.modules.ui2.*
 import endorh.unican.gcrv.animation.TimeLine
 import endorh.unican.gcrv.renderers.*
 import endorh.unican.gcrv.scene.objects.*
@@ -14,6 +11,8 @@ import endorh.unican.gcrv.serialization.SavableSerializer
 import endorh.unican.gcrv.transformations.Transform2D
 import endorh.unican.gcrv.transformations.TransformProperty
 import endorh.unican.gcrv.ui2.MutableSerialStateList
+import endorh.unican.gcrv.util.MutableStateConcurrentList
+import endorh.unican.gcrv.util.mutableStateConcurrentList
 import endorh.unican.gcrv.util.toTitleCase
 import endorh.unican.gcrv.util.toVec2f
 import kotlinx.serialization.*
@@ -30,7 +29,7 @@ import kotlin.reflect.KProperty0
 
 @Serializable(Object2DStack.Serializer::class)
 class Object2DStack {
-   val objects: MutableSerialStateList<Object2D> = mutableStateListOf()
+   val objects: MutableStateConcurrentList<Object2D> = mutableStateConcurrentList()
 
    fun collectColliders(filteredObjects: Collection<Object2D>? = null, ignoreTransforms: Boolean = false, transform: Transform2D? = null): List<Pair<TransformedCollider2D, Object2D>> {
       val collector = TaggedColliderPassInputScopeImpl<Object2D>()
@@ -42,7 +41,7 @@ class Object2DStack {
          for (child in o.children) render(child)
          if (!ignoreTransforms) collector.pop()
       }
-      for (o in objects) render(o)
+      for (o in objects.snapshot) render(o)
       return collector.collected
    }
 
@@ -56,7 +55,7 @@ class Object2DStack {
          for (child in o.children) render(child)
          if (!ignoreTransforms) collector.pop()
       }
-      for (o in objects) render(o)
+      for (o in objects.snapshot) render(o)
       return collector.collected
    }
 
@@ -93,6 +92,7 @@ abstract class Object2D(val type: Object2DType<out Object2D>) : PropertyHolder, 
    open val gizmos: List<Gizmo2D> get() = emptyList()
 
    var name: String by string(type.generateName()).unique().static() priority 100
+   var collapseChildren: Boolean by bool(false) priority 100 internal true
 
    open val children: List<Object2D> get() = emptyList()
    open val renderers: List<Renderer2D> = emptyList()
@@ -114,7 +114,15 @@ abstract class Object2D(val type: Object2DType<out Object2D>) : PropertyHolder, 
    operator fun <T> get(prop: KProperty<T>) = properties[prop.name] as? AnimProperty<T>
       ?: throw IllegalArgumentException("Property ${prop.name} is not an ObjectProperty")
 
-   fun onPropertyChange(block: () -> Unit) = properties.values.forEach { it.onChange { block() } }
+   open fun onPropertyChange(block: () -> Unit) {
+      properties.values.forEach { it.onChange { block() } }
+      children.forEach { it.onPropertyChange(block) }
+   }
+
+   open fun setTimeLine(timeLine: TimeLine) {
+      this.timeLine.value = timeLine
+      children.forEach { it.setTimeLine(timeLine) }
+   }
 
    protected operator fun <N: PropertyNode<*>> N.provideDelegate(thisRef: Object2D, property: KProperty<*>): N = apply {
       if (property.name in RESERVED_NAMES) throw IllegalArgumentException("Property name '${property.name}' is reserved!")
@@ -152,10 +160,10 @@ abstract class Object2D(val type: Object2DType<out Object2D>) : PropertyHolder, 
    }.redirect(onDrag))
    protected fun drawGizmo(renderer: PixelRendererContext.(Transform2D) -> Unit) = DrawGizmo(renderer)
 
-   fun use(surface: UiSurface) {
+   open fun use(surface: UiSurface) {
       properties.allProperties.forEach { it.use(surface) }
    }
-   fun use(surface: UiSurface, prop: KProperty<*>) {
+   open fun use(surface: UiSurface, prop: KProperty<*>) {
       when (val p = properties[prop.name]) {
          is AnimProperty<*> -> p.use(surface)
          is CompoundAnimProperty -> p.allProperties.forEach { it.use(surface) }

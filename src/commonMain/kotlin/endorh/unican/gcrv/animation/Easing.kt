@@ -22,10 +22,7 @@ import endorh.unican.gcrv.util.toVec2i
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.encoding.CompositeDecoder
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.*
 import kotlin.math.*
 import kotlin.reflect.KProperty
 
@@ -34,15 +31,22 @@ open class EasingType<T: Easing>(val name: String, val factory: () -> T) : Prese
    private val controlPoints by lazy { factory().controlPoints }
 
    override val descriptor: SerialDescriptor by lazy {
-      buildClassSerialDescriptor(name) {
+      if (controlPoints.isEmpty())
+         buildClassSerialDescriptor(name)
+      else buildClassSerialDescriptor(name) {
          controlPoints.forEach {
             element(it.name, Vec2fSerializer.descriptor)
          }
       }
    }
    override fun serialize(encoder: Encoder, value: T) {
-      encoder.beginStructure(descriptor).apply {
-         controlPoints.forEachIndexed { i, p ->
+      // REPORT: This was `beginStructure` and didn't throw any warning/hint that
+      //         something was terribly wrong.
+      //         Regular serialization (`Json.encodeToString`) was unaffected, but
+      //         serialization explicitly to JSON `Json.encodeToJsonElement` produced
+      //         incorrect serialized results, without any warning/error.
+      encoder.encodeStructure(descriptor) {
+         value.controlPoints.forEachIndexed { i, p ->
             encodeSerializableElement(descriptor, i, Vec2fSerializer, p.value)
          }
       }

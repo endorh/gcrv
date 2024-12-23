@@ -225,7 +225,7 @@ class EditorScene : SimpleScene("Line Algorithms"), WindowScene, CoroutineScope 
 
     fun drawObject(obj: Object2D, updateCanvas: Boolean = true, updateSelection: Boolean = true) {
         obj.onPropertyChange { updateCanvas() }
-        obj.timeLine.value = timeLine.value
+        obj.setTimeLine(timeLine.value)
         objectStack.objects += obj
         if (updateSelection) {
             selectedObjects.clear()

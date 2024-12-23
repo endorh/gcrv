@@ -25,9 +25,6 @@ class InspectorWindow(scene: EditorScene) : BaseWindow<EditorScene>("Inspector",
                 .flatMap { it.properties.values }
                 .groupBy { it.name }
                 .values.sortedByDescending { it.first().priority }
-            // println("Selected object: ${scene.selectedObjects.firstOrNull()?.name}")
-            // println("Properties: $properties")
-            // println("All properties: ${scene.selectedObjects.use().flatMap { it.properties.allProperties }}")
             for (propSet in properties)
                 propertyNodeEditor(propSet)
         }
@@ -44,7 +41,7 @@ class InspectorWindow(scene: EditorScene) : BaseWindow<EditorScene>("Inspector",
         @Suppress("UNCHECKED_CAST")
         propSet as List<AnimProperty<Any>>
         val first = propSet.first()
-        if (first.isUnique && propSet.size > 1) return
+        if (first.isInternal || first.isUnique && propSet.size > 1) return
         Row(Grow.Std) {
             modifier.margin(horizontal=2.dp, vertical=1.dp).padding(horizontal=4.dp)
             with(first) {
@@ -59,7 +56,7 @@ class InspectorWindow(scene: EditorScene) : BaseWindow<EditorScene>("Inspector",
             .map { p -> propSet.mapNotNull { it.properties[p.name] } }
         if (subProps.isNotEmpty()) Group(first.name.toTitleCase(), first.showExpanded) {
             Column(Grow.Std) {
-                this.modifier.padding(start=8.dp).border(LeftBorder(colors.secondaryVariant, 2.dp))
+                modifier.padding(start=8.dp).border(LeftBorder(colors.secondaryVariant, 2.dp))
                 for (prop in subProps)
                     propertyNodeEditor(prop)
             }

@@ -150,7 +150,7 @@ class PolyFillRenderPass2D(
          if (!ignoreTransforms) scope.pop()
       }
 
-      for (o in objectStack.objects) render(o)
+      for (o in objectStack.objects.snapshot) render(o)
 
       for (fill in scope.collected) with(
          if (settings.enforceRenderer.value) settings.fallbackRenderer.value
@@ -184,7 +184,7 @@ class SplineRenderPass2D(
       }
 
       // Collect primitives
-      for (o in objectStack.objects) render(o)
+      for (o in objectStack.objects.snapshot) render(o)
 
       // Render primitives
       for (spline in scope.collected) with(
@@ -219,7 +219,7 @@ class WireframeRenderPass2D(
       }
 
       // Collect primitives
-      for (o in objectStack.objects) render(o)
+      for (o in objectStack.objects.snapshot) render(o)
 
       // Render primitives
       for (line in scope.collected) {
@@ -256,7 +256,7 @@ class PointRenderPass2D(
       }
 
       // Collect primitives
-      for (o in objectStack.objects) render(o)
+      for (o in objectStack.objects.snapshot) render(o)
 
       // Render primitives
       for (point in scope.collected) {

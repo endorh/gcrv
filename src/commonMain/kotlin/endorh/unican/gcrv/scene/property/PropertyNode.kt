@@ -50,9 +50,12 @@ sealed interface PropertyMap : Map<String, PropertyNode<*>> {
    }
    fun CompositeEncoder.encodeProperties(descriptor: SerialDescriptor, offset: Int, value: PropertyMap) {
       for ((i, p) in sortedProperties.withIndex()) {
-         val prop = value[p.name] ?: throw SerializationException("Missing sub-property: ${p.name}")
-         @Suppress("UNCHECKED_CAST")
-         encodeSerializableElement(descriptor, offset + i, p.saveSerializer as SerializationStrategy<Any?>, prop.save())
+         value[p.name]?.let { prop ->
+            if ((prop as? AnimProperty<*>)?.isDefault != true) {
+               @Suppress("UNCHECKED_CAST")
+               encodeSerializableElement(descriptor, offset + i, p.saveSerializer as SerializationStrategy<Any?>, prop.save())
+            }
+         } // ?: throw SerializationException("Missing sub-property: ${p.name}")
       }
    }
    fun CompositeDecoder.decodeProperties(
@@ -69,7 +72,7 @@ sealed interface PropertyMap : Map<String, PropertyNode<*>> {
          } else extraHandler(i)
       }
       values.indexOfFirst { it == null }.takeIf { it >= 0 }?.let {
-         throw SerializationException("Missing sub-property: ${props[it].name}")
+         // throw SerializationException("Missing sub-property: ${props[it].name}")
       }
 
       return PropertyMapImpl().apply {
@@ -77,7 +80,7 @@ sealed interface PropertyMap : Map<String, PropertyNode<*>> {
             map[prop.name] = prop
             @Suppress("UNCHECKED_CAST")
             prop as Savable<Any>
-            prop.load(values[i]!!)
+            values[i]?.let { prop.load(it) }
          }
       }
    }
@@ -122,6 +125,7 @@ sealed interface PropertyNode<T> : SavableSerializer<T> {
    val holder: PropertyHolder?
    val name: String
    val priority: Int
+   val isInternal: Boolean get() = false
 
    fun onChange(block: () -> Unit)
    fun clearChangeListeners()
@@ -129,6 +133,10 @@ sealed interface PropertyNode<T> : SavableSerializer<T> {
 
 infix fun <N: PropertyNode<*>> N.priority(priority: Int): N = apply {
    setPriority(priority)
+}
+
+infix fun <N: PropertyNode<*>> N.internal(isInternal: Boolean): N = apply {
+   (this as? AnimProperty<*>)?.isInternal = isInternal
 }
 
 internal fun PropertyNode<*>.init(name: String, holder: PropertyHolder?) {

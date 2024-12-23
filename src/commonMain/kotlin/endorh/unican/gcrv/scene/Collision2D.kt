@@ -56,6 +56,11 @@ interface Collider2D {
    fun contains(p: Vec2f, canvasTransform: Transform2D): Boolean
 
    /**
+    * Determine if a position `p` in canvas space is contained within this collider.
+    */
+   operator fun contains(p: Vec2f) = contains(p, Transform2D.identity)
+
+   /**
     * Distance to the center of this collider, used to select the closest collider to
     * an input position.
     *

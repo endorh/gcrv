@@ -142,12 +142,12 @@ class TimeLineWindow(scene: EditorScene) : BaseWindow<EditorScene>("Timeline", s
                   timeLine.currentTime.value = timeLine.renderedRange.start
                }
             }
-            Button(if (playback.isPlaying) "||" else "|>", "play/pause") {
+            Button(if (playback.isPlaying) "| |" else "|>", "play/pause") {
                modifier.margin(4.dp).onClick {
                   playback.togglePause()
                }
             }
-            Button("[]", "stop") {
+            Button("[ ]", "stop") {
                modifier.margin(4.dp).onClick {
                   playback.stop()
                }

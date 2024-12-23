@@ -145,6 +145,7 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
       val th = modifier.trackSize.px
       var h = 24F + 12F
       fun visit(p: PropertyNode<*>, suppressTitle: Boolean = false) {
+         if (p.isInternal) return
          h += th
          if (p is CompoundAnimProperty) {
             if (suppressTitle) h -= th
@@ -209,6 +210,7 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
       var trackY = 24F + 12F - yScroll
       val treeLineColor = modifier.propertyTextColor.withAlpha(0.5F)
       fun drawTrack(node: PropertyNode<*>, suppressTitle: Boolean = false) {
+         if (node.isInternal) return
          val focused = node in focusedProperties.use()
          // val focused = node == focusedProperty.value
          if (node !is CompoundAnimProperty || !suppressTitle) drawPropName(
@@ -293,6 +295,7 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
       val trackH = modifier.trackSize.px
       var py = 24F + 12F + trackH/2
       fun visit(p: PropertyNode<*>, suppressTitle: Boolean = false): AnimProperty<*>? {
+         if (p.isInternal) return null
          if (py >= y && p is AnimProperty<*>) return p
          py += trackH
          if (p is CompoundAnimProperty) {
@@ -343,6 +346,7 @@ class TimeLineMultiEditorNode(parent: UiNode?, surface: UiSurface) : UiNode(pare
             focusedProperties.lastOrNull()?.let { last ->
                var range: MutableList<AnimProperty<*>>? = null
                fun collectVisit(p: PropertyNode<*>): Boolean {
+                  if (p.isInternal) return false
                   if (p is CompoundAnimProperty) {
                      for (sub in p.properties.values)
                         if (collectVisit(sub)) return true
